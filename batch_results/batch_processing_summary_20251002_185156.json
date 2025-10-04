@@ -1,0 +1,345 @@
+{
+  "timestamp": "20251002_185156",
+  "total_files": 5,
+  "successful": 4,
+  "failed": 1,
+  "results": [
+    {
+      "success": true,
+      "original_file": "linde3.pdf",
+      "processed_file": "processed_20251002_184218.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "658",
+              "PONum": "MISSING",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T18:44:24.118494Z",
+              "UseOTS": true,
+              "OTSName": "EZ LINE PIPE SUPPORT CO",
+              "OTSAddress1": "21340 HWY 6",
+              "OTSCity": "MANVEL",
+              "OTSState": "TX",
+              "OTSZip": "77578-3832",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZA4011102",
+              "LineDesc": "HANDY AUTO PROFESSIONAL KIT",
+              "SellingQuantity": "2",
+              "OverridePriceList": true,
+              "DocUnitPrice": "1040.00",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": true,
+      "original_file": "matheson08925123.pdf",
+      "processed_file": "processed_20251002_184218.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "869",
+              "PONum": "4679158",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T18:47:08.728468Z",
+              "UseOTS": true,
+              "OTSName": "MATHESON TRI-GAS INC.",
+              "OTSAddress1": "607 NORTHWEST LINCOLN ROAD",
+              "OTSCity": "IDABEL",
+              "OTSState": "OK",
+              "OTSZip": "74745",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "28Y05E"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D72",
+              "LineDesc": "CUTTING TIP KOIKE #2 103D7-2",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D73",
+              "LineDesc": "CUTTING TIP KOIKE #3 103D7-3",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": false,
+      "original_file": "nexair01958333.pdf",
+      "error": "Exception during processing: "
+    },
+    {
+      "success": true,
+      "original_file": "purity00527818.pdf",
+      "processed_file": "processed_20251002_184425.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "437",
+              "PONum": "551219",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T18:47:16.590407Z",
+              "UseOTS": true,
+              "OTSName": "PURITY CYLINDER GASES - ELK WAREHOUSE",
+              "OTSAddress1": "4637 CHESTER DR",
+              "OTSCity": "ELKHART",
+              "OTSState": "IN",
+              "OTSZip": "46516",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP106D75",
+              "LineDesc": "2 & 1/2 - 3 INCH 50 - 100MM",
+              "SellingQuantity": "5",
+              "OverridePriceList": true,
+              "DocUnitPrice": "20.30",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": true,
+      "original_file": "norco02461618.pdf",
+      "processed_file": "processed_20251002_184709.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "935",
+              "PONum": "2248280",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T18:51:56.779508Z",
+              "UseOTS": true,
+              "OTSName": "NORCO INC - ACCTS PAYABLE",
+              "OTSAddress1": "1125 W AMITY RD",
+              "OTSCity": "BOISE",
+              "OTSState": "ID",
+              "OTSZip": "83705-5412",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232061",
+              "LineDesc": "ZOSP-1 SOCKET #1",
+              "SellingQuantity": "32",
+              "OverridePriceList": true,
+              "DocUnitPrice": "14.95",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232062",
+              "LineDesc": "ZOSP-1 PLUG#18",
+              "SellingQuantity": "24",
+              "OverridePriceList": true,
+              "DocUnitPrice": "8.45",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232081",
+              "LineDesc": "ZOSP-2 SOCKET #2",
+              "SellingQuantity": "20",
+              "OverridePriceList": true,
+              "DocUnitPrice": "14.95",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232240",
+              "LineDesc": "HOSE TO HOSE COUPLING SET",
+              "SellingQuantity": "4",
+              "OverridePriceList": true,
+              "DocUnitPrice": "37.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232260",
+              "LineDesc": "TORCH QUICK COUPLER",
+              "SellingQuantity": "20",
+              "OverridePriceList": true,
+              "DocUnitPrice": "37.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232220",
+              "LineDesc": "REGULATOR TO HOSE QUICK COUPLER",
+              "SellingQuantity": "7",
+              "OverridePriceList": true,
+              "DocUnitPrice": "37.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "0866908200",
+              "LineDesc": "KOIKE STEEL BAND SPRING",
+              "SellingQuantity": "32",
+              "OverridePriceList": true,
+              "DocUnitPrice": "3.91",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "1138986500",
+              "LineDesc": "8 INCH VINYL END CAP",
+              "SellingQuantity": "1",
+              "OverridePriceList": true,
+              "DocUnitPrice": "27.71",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 3
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 4
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 5
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 6
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 7
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 8
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    }
+  ]
+}

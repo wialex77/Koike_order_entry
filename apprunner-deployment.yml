@@ -1,0 +1,19 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    build:
+      - echo "Installing dependencies..."
+      - pip install -r requirements.txt
+      - echo "Build completed"
+run:
+  runtime-version: 3.9
+  command: python app.py
+  network:
+    port: 8080
+    env: PORT
+  env:
+    - name: FLASK_ENV
+      value: production
+    - name: PYTHONPATH
+      value: /var/app/current

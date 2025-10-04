@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<VSTOInstaller version="1.0" xmlns="http://schemas.microsoft.com/VisualStudio/2005/OfficeTools/Installer">
+  <entry>
+    <entryPoint>
+      <assemblyIdentity name="ArzanaVSTO" version="1.0.0.0" language="neutral" processorArchitecture="MSIL" />
+      <commandClass name="ArzanaVSTO.ThisAddIn" />
+    </entryPoint>
+    <update enabled="true" />
+    <application>
+      <message>This application will install the Arzana Purchase Order Processing add-in for Outlook.</message>
+      <description>Automatically processes purchase orders from incoming emails using AI-powered document analysis.</description>
+    </application>
+  </entry>
+</VSTOInstaller>

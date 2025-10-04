@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - PO Processor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-chart-line"></i> Processing Dashboard</h2>
+            <button class="btn btn-outline-primary" onclick="refreshDashboard()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading indicator -->
+<div id="loadingIndicator" class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Loading dashboard data...</p>
+</div>
+
+<!-- Dashboard content -->
+<div id="dashboardContent" style="display: none;">
+    <!-- Main Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h1 class="display-4" id="accuracyRate">-</h1>
+                    <h5>Hallucination Rate</h5>
+                    <p class="mb-0">Epicor-ready JSON that actually contained an error</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h1 class="display-4" id="oneClickRate">-</h1>
+                    <h5>Missing Info Rate</h5>
+                    <p class="mb-0">Arzana could not prepare an Epicor-ready JSON</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Types Breakdown -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-exclamation-triangle"></i> User-Reported Errors</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Error Type</th>
+                                    <th>Count</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="errorTypesTableBody">
+                                <!-- Error types will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-database"></i> Missing Fields (Automatic)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Field Name</th>
+                                    <th>Times Missing</th>
+                                    <th>%</th>
+                                </tr>
+                            </thead>
+                            <tbody id="missingFieldsTableBody">
+                                <!-- Missing fields will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error message -->
+<div id="errorMessage" class="alert alert-danger" style="display: none;">
+    <h5><i class="fas fa-exclamation-triangle"></i> Error Loading Dashboard</h5>
+    <p id="errorText"></p>
+    <button class="btn btn-outline-danger" onclick="refreshDashboard()">Try Again</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load dashboard data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardData();
+});
+
+async function loadDashboardData() {
+    try {
+        const response = await fetch('/api/dashboard/metrics');
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        displayDashboardData(data);
+        hideLoadingIndicator();
+        showDashboardContent();
+    } catch (error) {
+        console.error('Error loading dashboard:', error);
+        hideLoadingIndicator();
+        showError(error.message);
+    }
+}
+
+function displayDashboardData(data) {
+    // Update main metrics
+    // Hallucination Rate - directly from backend (files with no missing info that had errors)
+    document.getElementById('accuracyRate').textContent = Math.round(data.hallucination_rate || 0) + '%';
+    
+    // Missing Info Rate (Arzana couldn't prepare Epicor-ready JSON)
+    document.getElementById('oneClickRate').textContent = Math.round(data.missing_info_rate || 0) + '%';
+    
+    // Create error types table (user-reported errors)
+    createErrorTypesTable(data.error_types_breakdown || {}, data.other_errors || []);
+    
+    // Create missing fields table (automatic missing field tracking)
+    createMissingFieldsTable(data.missing_fields_stats || []);
+}
+
+function createMissingFieldsTable(missingFieldsStats) {
+    const tbody = document.getElementById('missingFieldsTableBody');
+    tbody.innerHTML = '';
+    
+    if (!missingFieldsStats || missingFieldsStats.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No missing fields tracked yet</td></tr>';
+        return;
+    }
+    
+    missingFieldsStats.forEach(stat => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><code>${stat.field_name}</code></td>
+            <td><span class="badge bg-warning">${stat.count}</span></td>
+            <td>${stat.percentage}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function createErrorTypesTable(errorTypesData, otherErrors) {
+    const tbody = document.getElementById('errorTypesTableBody');
+    tbody.innerHTML = '';
+    
+    // Calculate total errors
+    const totalErrors = Object.values(errorTypesData).reduce((sum, count) => sum + count, 0) + otherErrors.length;
+    
+    if (totalErrors === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No errors recorded</td></tr>';
+        return;
+    }
+    
+    // Add standard error types
+    const errorTypeLabels = {
+        'account_number': 'Account Number',
+        'billing_address': 'Billing Address',
+        'shipping_address': 'Shipping Address',
+        'shipping_method': 'Shipping Method',
+        'part_number': 'Part Number',
+        'shipping_info': 'Shipping Info',  // Legacy
+        'part_numbers': 'Part Numbers',    // Legacy
+        'company_info': 'Company Info',
+        'other': 'Other'
+    };
+    
+    // Sort error types by quantity (descending)
+    const sortedErrorTypes = Object.entries(errorTypesData)
+        .filter(([type, count]) => count > 0)
+        .sort((a, b) => b[1] - a[1]);
+    
+    // Add rows for standard error types
+    sortedErrorTypes.forEach(([errorType, count]) => {
+        if (errorType !== 'other') {  // Handle 'other' separately
+            const percentage = ((count / totalErrors) * 100).toFixed(1);
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${errorTypeLabels[errorType] || errorType}</td>
+                <td>${count}</td>
+                <td>${percentage}%</td>
+            `;
+            tbody.appendChild(row);
+        }
+    });
+    
+    // Add individual "Other" errors
+    otherErrors.forEach(otherError => {
+        const percentage = ((1 / totalErrors) * 100).toFixed(1);
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><em>Other: ${otherError}</em></td>
+            <td>1</td>
+            <td>${percentage}%</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function refreshDashboard() {
+    hideError();
+    hideDashboardContent();
+    showLoadingIndicator();
+    loadDashboardData();
+}
+
+function showLoadingIndicator() {
+    document.getElementById('loadingIndicator').style.display = 'block';
+}
+
+function hideLoadingIndicator() {
+    document.getElementById('loadingIndicator').style.display = 'none';
+}
+
+function showDashboardContent() {
+    document.getElementById('dashboardContent').style.display = 'block';
+}
+
+function hideDashboardContent() {
+    document.getElementById('dashboardContent').style.display = 'none';
+}
+
+function showError(message) {
+    document.getElementById('errorText').textContent = message;
+    document.getElementById('errorMessage').style.display = 'block';
+}
+
+function hideError() {
+    document.getElementById('errorMessage').style.display = 'none';
+}
+</script>
+{% endblock %}

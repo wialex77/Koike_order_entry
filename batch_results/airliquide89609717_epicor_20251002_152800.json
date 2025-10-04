@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "413",
+        "PONum": "89609717-1",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-02T15:28:00.429852Z",
+        "UseOTS": true,
+        "OTSName": "AIR LIQUIDE CANADA INC.",
+        "OTSAddress1": "6354 Roper Road",
+        "OTSCity": "EDMONTON",
+        "OTSState": "AB",
+        "OTSZip": "T6B 3P9",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "6754W3"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232062",
+        "LineDesc": "KOIKE, HOSE CONNECTION, SAFETY-Z, QUICK COUPLER, TORCH, PLUG, OXYGEN",
+        "SellingQuantity": "8",
+        "OverridePriceList": true,
+        "DocUnitPrice": "7.80",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

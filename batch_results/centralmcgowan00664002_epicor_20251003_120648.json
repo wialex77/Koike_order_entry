@@ -1,0 +1,55 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "631",
+        "PONum": "255002",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T12:04:48.517795Z",
+        "UseOTS": true,
+        "OTSName": "THIELEN MACHINE & WELDING (DEALER)",
+        "OTSAddress1": "522 EAST MEEKER",
+        "OTSCity": "EDEN VALLEY",
+        "OTSState": "MN",
+        "OTSZip": "55329-1113",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "NEXT DAY AIR",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "KJ12250013",
+        "LineDesc": "SV WITH DGN M13X1 02 AND HYLOK 6M",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "60.61",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "KJ118251250912",
+        "LineDesc": "PRESSURE REGULATOR 2 PGV-300",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "2099.35",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "KJ12LP068651",
+        "LineDesc": "PCB 068651-B PART PCB-1",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "734.47",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

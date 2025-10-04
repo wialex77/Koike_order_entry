@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "658",
+        "PONum": "MISSING",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-02T18:44:24.118494Z",
+        "UseOTS": true,
+        "OTSName": "EZ LINE PIPE SUPPORT CO",
+        "OTSAddress1": "21340 HWY 6",
+        "OTSCity": "MANVEL",
+        "OTSState": "TX",
+        "OTSZip": "77578-3832",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZA4011102",
+        "LineDesc": "HANDY AUTO PROFESSIONAL KIT",
+        "SellingQuantity": "2",
+        "OverridePriceList": true,
+        "DocUnitPrice": "1040.00",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

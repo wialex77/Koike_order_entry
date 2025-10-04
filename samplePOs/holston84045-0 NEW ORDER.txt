@@ -1,0 +1,35 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "760",
+        "PONum": "84045",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-09-25T07:49:03.018367Z",
+        "UseOTS": true,
+        "OTSName": "HOLSTON GASES-CHATTANOOGA",
+        "OTSAddress1": "1105 Stuart Street",
+        "OTSCity": "Chattanooga",
+        "OTSState": "TN",
+        "OTSZip": "37406",
+        "PayFlag": "SHIP",
+        "RowMod": "A"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "9980009714",
+        "LineDesc": "PUSH BUTTON 3 FUNCTION",
+        "SellingQuantity": "3",
+        "OverridePriceList": true,
+        "DocUnitPrice": "40.67",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

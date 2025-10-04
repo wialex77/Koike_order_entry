@@ -1,0 +1,46 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "658",
+        "PONum": "76277738",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-02T16:44:07.411426Z",
+        "UseOTS": true,
+        "OTSName": "LGEPKG CHARLOTTE NC DC",
+        "OTSAddress1": "4236 STATESVILLE RD DOCK 1",
+        "OTSCity": "CHARLOTTE",
+        "OTSState": "NC",
+        "OTSZip": "28269-4244",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "3Y10X6"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP103D71",
+        "LineDesc": "CUT TIP 103D7-1",
+        "SellingQuantity": "15",
+        "OverridePriceList": true,
+        "DocUnitPrice": "28.05",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP103D73",
+        "LineDesc": "CUT TIP 103D7-3",
+        "SellingQuantity": "10",
+        "OverridePriceList": true,
+        "DocUnitPrice": "28.05",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

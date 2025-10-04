@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "437",
+        "PONum": "551219",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-02T18:47:16.590407Z",
+        "UseOTS": true,
+        "OTSName": "PURITY CYLINDER GASES - ELK WAREHOUSE",
+        "OTSAddress1": "4637 CHESTER DR",
+        "OTSCity": "ELKHART",
+        "OTSState": "IN",
+        "OTSZip": "46516",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP106D75",
+        "LineDesc": "2 & 1/2 - 3 INCH 50 - 100MM",
+        "SellingQuantity": "5",
+        "OverridePriceList": true,
+        "DocUnitPrice": "20.30",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

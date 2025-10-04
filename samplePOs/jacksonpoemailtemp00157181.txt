@@ -1,0 +1,44 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "597",
+        "PONum": "79900",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-09-24T07:26:52.220167Z",
+        "UseOTS": true,
+        "OTSName": "GORBEL",
+        "OTSAddress1": "600 FISHERS RUN",
+        "OTSCity": "VICTOR",
+        "OTSState": "NY",
+        "OTSZip": "14564",
+        "PayFlag": "SHIP",
+        "RowMod": "A"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "enteredmanually",
+        "LineDesc": "KOIKE ARONSON TURNING ROL DRIVER SYSTEM",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "3875.72",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "enteredmanually",
+        "LineDesc": "KOIKE ARONSON TDLER ROLL",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "811.40",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

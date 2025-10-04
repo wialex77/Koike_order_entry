@@ -1,0 +1,46 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "1774",
+        "PONum": "73370-9/19/25",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T12:05:54.326792Z",
+        "UseOTS": true,
+        "OTSName": "Mid-State Contracting",
+        "OTSAddress1": "2001 County HWY U",
+        "OTSCity": "Wausau",
+        "OTSState": "WI",
+        "OTSZip": "54401",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "586199"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "HYP420261",
+        "LineDesc": "NOZZLE:XPR 170 AMPS",
+        "SellingQuantity": "10",
+        "OverridePriceList": true,
+        "DocUnitPrice": "27.63",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "HYP420258",
+        "LineDesc": "ELECTRODE:XPR 170",
+        "SellingQuantity": "20",
+        "OverridePriceList": true,
+        "DocUnitPrice": "22.53",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

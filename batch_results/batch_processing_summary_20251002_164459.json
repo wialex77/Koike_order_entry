@@ -1,0 +1,211 @@
+{
+  "timestamp": "20251002_164459",
+  "total_files": 5,
+  "successful": 3,
+  "failed": 2,
+  "results": [
+    {
+      "success": false,
+      "original_file": "redball1PO4086901.pdf",
+      "error": "Upload failed: 500 - {\n  \"error\": \"Unexpected error: 'ProcessingResult' object has no attribute 'notes'\"\n}\n"
+    },
+    {
+      "success": true,
+      "original_file": "linde2.pdf",
+      "processed_file": "processed_20251002_164219.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "658",
+              "PONum": "76277738",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T16:44:07.411426Z",
+              "UseOTS": true,
+              "OTSName": "LGEPKG CHARLOTTE NC DC",
+              "OTSAddress1": "4236 STATESVILLE RD DOCK 1",
+              "OTSCity": "CHARLOTTE",
+              "OTSState": "NC",
+              "OTSZip": "28269-4244",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "3Y10X6"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D71",
+              "LineDesc": "CUT TIP 103D7-1",
+              "SellingQuantity": "15",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D73",
+              "LineDesc": "CUT TIP 103D7-3",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": true,
+      "original_file": "matheson08925123.pdf",
+      "processed_file": "processed_20251002_164219.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "869",
+              "PONum": "4679158",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T16:44:17.891527Z",
+              "UseOTS": true,
+              "OTSName": "MATHESON TRI-GAS INC.",
+              "OTSAddress1": "607 NORTHWEST LINCOLN ROAD",
+              "OTSCity": "IDABEL",
+              "OTSState": "OK",
+              "OTSZip": "74745",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "453491145"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D72",
+              "LineDesc": "CUTTING TIP KOIKE #2 103D7-2",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP103D73",
+              "LineDesc": "CUTTING TIP KOIKE #3 103D7-3",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "28.05",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": false,
+      "original_file": "redball4086795.pdf",
+      "error": "Upload failed: 500 - {\n  \"error\": \"Unexpected error: 'ProcessingResult' object has no attribute 'notes'\"\n}\n"
+    },
+    {
+      "success": true,
+      "original_file": "holston84045-0 NEW ORDER.PDF",
+      "processed_file": "processed_20251002_164415.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "760",
+              "PONum": "84045",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-02T16:44:55.850532Z",
+              "UseOTS": true,
+              "OTSName": "HOLSTON GASES-CHATTANOOGA",
+              "OTSAddress1": "1105 Stuart Street",
+              "OTSCity": "Chattanooga",
+              "OTSState": "TN",
+              "OTSZip": "37406",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "9980009714",
+              "LineDesc": "PUSH BUTTON 3 FUNCTION",
+              "SellingQuantity": "3",
+              "OverridePriceList": true,
+              "DocUnitPrice": "40.67",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    }
+  ]
+}

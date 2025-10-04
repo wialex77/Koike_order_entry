@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "735",
+        "PONum": "32717",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T12:06:21.326820Z",
+        "UseOTS": true,
+        "OTSName": "WILSON MACHINE & WELDING, INC.",
+        "OTSAddress1": "4787 HIGHWAY 78",
+        "OTSCity": "CORDOVA",
+        "OTSState": "AL",
+        "OTSZip": "35550-4121",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP106M73",
+        "LineDesc": "ZT IP106M7 #3",
+        "SellingQuantity": "3",
+        "OverridePriceList": true,
+        "DocUnitPrice": "21.50",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

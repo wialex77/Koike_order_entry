@@ -1,0 +1,30 @@
+{
+    "FlaskServerUrl": "http://127.0.0.1:5000",
+    "CheckIntervalSeconds": 30,
+    "LogPath": "C:\\Users\\willt\\Downloads\\Koike\\ArzanaPowerShell\\logs\\",
+    "MaxLogFiles": 10,
+    "LogLevel": "INFO",
+    "EmailCategories": {
+        "Ready": "Arzana-Ready",
+        "CustomerMatched": "Arzana-CustomerMatched", 
+        "NeedsReview": "Arzana-NeedsReview",
+        "MissingInfo": "Arzana-MissingInfo",
+        "Error": "Arzana-Error",
+        "Processing": "Arzana-Processing"
+    },
+    "PODetection": {
+        "MinConfidence": 50,
+        "SubjectKeywords": [
+            "purchase order", "po number", "po#", "order confirmation", "order request",
+            "p.o.", "p.o number", "purchase req", "purchase request", "order form",
+            "quote", "quotation", "invoice", "billing", "order details",
+            "new order", "order placed", "order received", "order summary"
+        ],
+        "BodyKeywords": [
+            "purchase order", "po number", "po#", "order number", "order date",
+            "bill to", "ship to", "quantity", "unit price", "total amount",
+            "part number", "item number", "manufacturer", "supplier", "vendor",
+            "order total", "subtotal", "tax", "shipping", "delivery"
+        ]
+    }
+}

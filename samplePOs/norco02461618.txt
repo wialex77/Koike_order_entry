@@ -1,0 +1,98 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "935",
+        "PONum": "2248280",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-09-23T16:16:52.385956Z",
+        "UseOTS": true,
+        "OTSName": "NORCO, INC",
+        "OTSAddress1": "3333 W YELLOWSTONE HWY",
+        "OTSCity": "MILLS",
+        "OTSState": "WY",
+        "OTSZip": "82604",
+        "PayFlag": "SHIP",
+        "RowMod": "A"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232061",
+        "LineDesc": "ZOSP-1 SOCKET #1",
+        "SellingQuantity": "32",
+        "OverridePriceList": true,
+        "DocUnitPrice": "14.95",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232062",
+        "LineDesc": "ZOSP-1 PLUG#18",
+        "SellingQuantity": "24",
+        "OverridePriceList": true,
+        "DocUnitPrice": "8.45",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232081",
+        "LineDesc": "ZOSP-2 SOCKET #2",
+        "SellingQuantity": "20",
+        "OverridePriceList": true,
+        "DocUnitPrice": "14.95",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232240",
+        "LineDesc": "HOSE TO HOSE COUPLING SET",
+        "SellingQuantity": "4",
+        "OverridePriceList": true,
+        "DocUnitPrice": "37.05",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232260",
+        "LineDesc": "TORCH QUICK COUPLER",
+        "SellingQuantity": "20",
+        "OverridePriceList": true,
+        "DocUnitPrice": "37.05",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232220",
+        "LineDesc": "REGULATOR TO HOSE QUICK COUPLER",
+        "SellingQuantity": "7",
+        "OverridePriceList": true,
+        "DocUnitPrice": "37.05",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "0866908200",
+        "LineDesc": "KOIKE STEEL BAND SPRING",
+        "SellingQuantity": "32",
+        "OverridePriceList": true,
+        "DocUnitPrice": "3.91",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "1138986500",
+        "LineDesc": "8 INCH VINYL END CAP",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "27.71",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

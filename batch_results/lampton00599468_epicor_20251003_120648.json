@@ -1,0 +1,73 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "893",
+        "PONum": "558572",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T12:05:31.121870Z",
+        "UseOTS": true,
+        "OTSName": "LAMPTON WELDING SUPPLY REPAIR",
+        "OTSAddress1": "601 N WASHINGTON",
+        "OTSCity": "WICHITA",
+        "OTSState": "KS",
+        "OTSZip": "67214",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "61004264",
+        "LineDesc": "KOI POWER CORD ELECTRIC",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "83.39",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZS30313",
+        "LineDesc": "KOI CRANK",
+        "SellingQuantity": "5",
+        "OverridePriceList": true,
+        "DocUnitPrice": "12.64",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZS30747",
+        "LineDesc": "KOI LAMP",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "4.67",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZS30767",
+        "LineDesc": "KOI ARM",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "702.00",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "61001094",
+        "LineDesc": "KOI MOTOR",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "242.37",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

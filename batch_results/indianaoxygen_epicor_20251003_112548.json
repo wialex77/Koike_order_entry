@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "636",
+        "PONum": "728221",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T11:21:13.111291Z",
+        "UseOTS": true,
+        "OTSName": "INDIANA OXYGEN",
+        "OTSAddress1": "6099 W CORPORATE WAY",
+        "OTSCity": "INDIANAPOLIS",
+        "OTSState": "IN",
+        "OTSZip": "46278",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232260",
+        "LineDesc": "ZA323-2260 TORCH TO HOSE QUICK CONNECTORS SET",
+        "SellingQuantity": "2",
+        "OverridePriceList": true,
+        "DocUnitPrice": "48.00",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

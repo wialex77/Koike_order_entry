@@ -1,0 +1,37 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "1105",
+        "PONum": "065700",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-02T15:27:50.507490Z",
+        "UseOTS": true,
+        "OTSName": "CUATE'S GAS COMPRESSOR 5* HARDGOODS",
+        "OTSAddress1": "1455 SUNDERMAN RD",
+        "OTSCity": "EAGLE LAKE",
+        "OTSState": "TX",
+        "OTSZip": "77434",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "48R56R"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP102HC2",
+        "LineDesc": "TIP 102HC #2 ACETYLENE",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "7.70",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

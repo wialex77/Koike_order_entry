@@ -1,0 +1,624 @@
+{% extends "base.html" %}
+
+{% block title %}Files - PO Processor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-folder-open"></i> Processed Files</h2>
+            <button class="btn btn-outline-primary" onclick="refreshFiles()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading indicator -->
+<div id="loadingIndicator" class="text-center">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-2">Loading files...</p>
+</div>
+
+<!-- Files list -->
+<div id="filesContent" style="display: none;">
+    <div class="card">
+        <div class="card-body">
+            <div id="filesList">
+                <!-- Files will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error message -->
+<div id="errorMessage" class="alert alert-danger" style="display: none;">
+    <h5><i class="fas fa-exclamation-triangle"></i> Error Loading Files</h5>
+    <p id="errorText"></p>
+    <button class="btn btn-outline-danger" onclick="refreshFiles()">Try Again</button>
+</div>
+
+<!-- Error Details Modal -->
+<div class="modal fade" id="errorDetailsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Error Types</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Error Types (select all that apply):</label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="account_number" id="error_account_number">
+                        <label class="form-check-label" for="error_account_number">
+                            Account Number
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="billing_address" id="error_billing_address">
+                        <label class="form-check-label" for="error_billing_address">
+                            Billing Address
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="shipping_address" id="error_shipping_address">
+                        <label class="form-check-label" for="error_shipping_address">
+                            Shipping Address
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="shipping_method" id="error_shipping_method">
+                        <label class="form-check-label" for="error_shipping_method">
+                            Shipping Method
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="part_number" id="error_part_number">
+                        <label class="form-check-label" for="error_part_number">
+                            Part Number
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="other" id="error_other">
+                        <label class="form-check-label" for="error_other">
+                            Other
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-3" id="otherDetailsDiv" style="display: none;">
+                    <label for="otherDetails" class="form-label">Other Details:</label>
+                    <textarea class="form-control" id="otherDetails" rows="3" placeholder="Please describe the error..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="submitErrorDetails()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allFiles = [];
+let selectedFileId = null;
+
+// Load files on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadFiles();
+    
+    // Add event listener for "Other" checkbox
+    document.getElementById('error_other').addEventListener('change', function() {
+        const otherDetailsDiv = document.getElementById('otherDetailsDiv');
+        otherDetailsDiv.style.display = this.checked ? 'block' : 'none';
+    });
+});
+
+async function loadFiles() {
+    try {
+        const response = await fetch('/api/files');
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        allFiles = data.files || [];
+        displayFiles();
+        hideLoadingIndicator();
+        showFilesContent();
+    } catch (error) {
+        console.error('Error loading files:', error);
+        hideLoadingIndicator();
+        showError(error.message);
+    }
+}
+
+function displayFiles() {
+    const filesList = document.getElementById('filesList');
+    filesList.innerHTML = '';
+    
+    if (allFiles.length === 0) {
+        filesList.innerHTML = '<p class="text-muted text-center">No files processed yet.</p>';
+        return;
+    }
+    
+    allFiles.forEach(file => {
+        const fileItem = createFileItem(file);
+        filesList.appendChild(fileItem);
+    });
+}
+
+function createFileItem(file) {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'file-item mb-2';
+    fileItem.innerHTML = `
+        <div class="card">
+            <div class="card-header" onclick="toggleFileExpansion(${file.id})" style="cursor: pointer;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>
+                            ${file.original_filename}
+                        </h6>
+                        <small class="text-muted">${file.filename}</small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        ${hasMissingInfo(file) ? '<span class="badge bg-danger me-2">Missing Info</span>' : `<span class="badge ${getStatusBadgeClass(file.validation_status)} me-2" id="status-${file.id}">${getStatusText(file.validation_status)}</span>`}
+                        <button class="btn btn-sm btn-outline-danger me-2" onclick="event.stopPropagation(); removeFile(${file.id})" title="Remove file">
+                            <i class="fas fa-times"></i>
+                        </button>
+                        <i class="fas fa-chevron-down" id="chevron-${file.id}"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" id="content-${file.id}" style="display: none;">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-success" onclick="markFileCorrectAndEnter(${file.id})">
+                                <i class="fas fa-check"></i> Correct: Enter Order
+                            </button>
+                            <button class="btn btn-danger" onclick="markFileError(${file.id})">
+                                <i class="fas fa-times"></i> Contains Error
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <h6>JSON Output:</h6>
+            <div id="json-editor-container-${file.id}">
+                <textarea class="form-control font-monospace" id="json-editor-${file.id}" rows="15" style="font-size: 0.85rem; display: none;"></textarea>
+                <pre class="bg-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><code id="json-${file.id}">Loading...</code></pre>
+            </div>
+            <div id="edit-actions-${file.id}" style="margin-top: 10px;">
+                <button class="btn btn-secondary" onclick="editJson(${file.id})">
+                    <i class="fas fa-edit"></i> Edit JSON
+                </button>
+            </div>
+            <div id="save-actions-${file.id}" style="margin-top: 10px; display: none;">
+                <button class="btn btn-success" onclick="saveJson(${file.id})">
+                    <i class="fas fa-save"></i> Save
+                </button>
+            </div>
+            </div>
+        </div>
+    `;
+    
+    return fileItem;
+}
+
+function getStatusBadgeClass(status) {
+    const classes = {
+        'correct': 'bg-success',
+        'contains_error': 'bg-danger',
+        'pending_review': 'bg-warning'
+    };
+    return classes[status] || 'bg-secondary';
+}
+
+function getStatusText(status) {
+    const texts = {
+        'correct': 'Correct',
+        'contains_error': 'Contains Error',
+        'pending_review': 'Pending Verification'
+    };
+    return texts[status] || 'Unknown';
+}
+
+function hasMissingInfo(file) {
+    // Check if the file has missing information based on processing summary
+    if (file.processing_summary) {
+        const summary = typeof file.processing_summary === 'string' ? 
+            JSON.parse(file.processing_summary) : file.processing_summary;
+        
+        return summary.parts_not_found > 0 || 
+               summary.parts_manual_review > 0 || 
+               !summary.customer_matched ||
+               summary.requires_manual_review;
+    }
+    
+    // Fallback: check if any error types indicate missing info
+    if (file.error_types && file.error_types.length > 0) {
+        return true;
+    }
+    
+    return false;
+}
+
+async function toggleFileExpansion(fileId) {
+    const content = document.getElementById(`content-${fileId}`);
+    const chevron = document.getElementById(`chevron-${fileId}`);
+    const jsonEditor = document.getElementById(`json-editor-${fileId}`);
+    const jsonCode = document.getElementById(`json-${fileId}`);
+    const editActions = document.getElementById(`edit-actions-${fileId}`);
+    const saveActions = document.getElementById(`save-actions-${fileId}`);
+    
+    if (content.style.display === 'none') {
+        // Expand
+        content.style.display = 'block';
+        chevron.className = 'fas fa-chevron-up';
+        
+        // Load JSON content
+        try {
+            const file = allFiles.find(f => f.id === fileId);
+            if (file && file.raw_json_data) {
+                // Parse and pretty-print the JSON
+                const jsonData = typeof file.raw_json_data === 'string' ? 
+                    JSON.parse(file.raw_json_data) : file.raw_json_data;
+                const prettyJson = JSON.stringify(jsonData, null, 2);
+                
+                // Check if file has missing info - if so, make it editable by default
+                if (hasMissingInfo(file)) {
+                    jsonCode.style.display = 'none';
+                    jsonEditor.style.display = 'block';
+                    jsonEditor.value = prettyJson;
+                    editActions.style.display = 'none';
+                    saveActions.style.display = 'block';
+                } else {
+                    jsonCode.style.display = 'block';
+                    jsonEditor.style.display = 'none';
+                    jsonCode.textContent = prettyJson;
+                    editActions.style.display = 'block';
+                    saveActions.style.display = 'none';
+                }
+            } else {
+                const errorMsg = 'No JSON data available';
+                jsonCode.textContent = errorMsg;
+                jsonEditor.value = errorMsg;
+            }
+        } catch (error) {
+            console.error('Error loading JSON data:', error);
+            const errorMsg = 'Error loading JSON data: ' + error.message;
+            jsonCode.textContent = errorMsg;
+            jsonEditor.value = errorMsg;
+        }
+    } else {
+        // Collapse
+        content.style.display = 'none';
+        chevron.className = 'fas fa-chevron-down';
+    }
+}
+
+function refreshFiles() {
+    hideError();
+    hideFilesContent();
+    showLoadingIndicator();
+    loadFiles();
+}
+
+function showLoadingIndicator() {
+    document.getElementById('loadingIndicator').style.display = 'block';
+}
+
+function hideLoadingIndicator() {
+    document.getElementById('loadingIndicator').style.display = 'none';
+}
+
+function showFilesContent() {
+    document.getElementById('filesContent').style.display = 'block';
+}
+
+function hideFilesContent() {
+    document.getElementById('filesContent').style.display = 'none';
+}
+
+function showError(message) {
+    document.getElementById('errorText').textContent = message;
+    document.getElementById('errorMessage').style.display = 'block';
+}
+
+function hideError() {
+    document.getElementById('errorMessage').style.display = 'none';
+}
+
+async function markFileCorrectAndEnter(fileId) {
+    try {
+        // First mark as correct
+        const response = await fetch(`/api/files/${fileId}/mark-correct`, {
+            method: 'POST'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update the file in our local data
+            const file = allFiles.find(f => f.id === fileId);
+            if (file) {
+                file.validation_status = 'correct';
+            }
+            
+            // Update the status badge
+            updateStatusBadge(fileId, 'correct');
+            
+            // Now enter the order into Epicor
+            await enterOrder(fileId);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        showError('Error marking file as correct: ' + error.message);
+    }
+}
+
+function markFileError(fileId) {
+    selectedFileId = fileId;
+    
+    // Reset all checkboxes
+    document.querySelectorAll('#errorDetailsModal input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    document.getElementById('otherDetails').value = '';
+    document.getElementById('otherDetailsDiv').style.display = 'none';
+    
+    // Show the modal
+    const modal = new bootstrap.Modal(document.getElementById('errorDetailsModal'));
+    modal.show();
+}
+
+async function submitErrorDetails() {
+    if (!selectedFileId) return;
+    
+    // Get selected error types
+    const selectedErrorTypes = [];
+    document.querySelectorAll('#errorDetailsModal input[type="checkbox"]:checked').forEach(cb => {
+        selectedErrorTypes.push(cb.value);
+    });
+    
+    if (selectedErrorTypes.length === 0) {
+        alert('Please select at least one error type');
+        return;
+    }
+    
+    // Get other details if "Other" is selected
+    let errorDetails = '';
+    if (selectedErrorTypes.includes('other')) {
+        errorDetails = document.getElementById('otherDetails').value.trim();
+        if (!errorDetails) {
+            alert('Please provide details for "Other" error type');
+            return;
+        }
+    }
+    
+    try {
+        const response = await fetch(`/api/files/${selectedFileId}/mark-error`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                error_types: selectedErrorTypes,
+                error_details: errorDetails
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Update the file in our local data
+            const file = allFiles.find(f => f.id === selectedFileId);
+            if (file) {
+                file.validation_status = 'contains_error';
+                file.error_types = selectedErrorTypes;
+                file.error_details = errorDetails;
+            }
+            
+            // Update the status badge
+            updateStatusBadge(selectedFileId, 'contains_error');
+            
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('errorDetailsModal'));
+            modal.hide();
+            
+            // JSON is already editable by default, no need to enable editing
+            
+            showSuccess('File marked as containing error. You can now edit the JSON before entering the order.');
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        showError('Error marking file as error: ' + error.message);
+    }
+}
+
+function updateStatusBadge(fileId, status) {
+    const statusBadge = document.getElementById(`status-${fileId}`);
+    if (statusBadge) {
+        statusBadge.className = `badge ${getStatusBadgeClass(status)} me-2`;
+        statusBadge.textContent = getStatusText(status);
+    }
+}
+
+function showSuccess(message) {
+    // Create a temporary success alert
+    const alert = document.createElement('div');
+    alert.className = 'alert alert-success alert-dismissible fade show position-fixed';
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '9999';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.parentNode.removeChild(alert);
+        }
+    }, 3000);
+}
+
+function editJson(fileId) {
+    const jsonEditor = document.getElementById(`json-editor-${fileId}`);
+    const jsonCode = document.getElementById(`json-${fileId}`);
+    const editActions = document.getElementById(`edit-actions-${fileId}`);
+    const saveActions = document.getElementById(`save-actions-${fileId}`);
+    
+    if (jsonEditor && jsonCode && editActions && saveActions) {
+        // Show editable view
+        jsonCode.style.display = 'none';
+        jsonEditor.style.display = 'block';
+        
+        // Load current JSON content into editor
+        if (jsonCode.textContent !== 'Loading...' && jsonCode.textContent !== 'No JSON data available') {
+            jsonEditor.value = jsonCode.textContent;
+        }
+        
+        // Hide edit actions, show save actions
+        editActions.style.display = 'none';
+        saveActions.style.display = 'block';
+    }
+}
+
+async function saveJson(fileId) {
+    try {
+        const jsonEditor = document.getElementById(`json-editor-${fileId}`);
+        const jsonCode = document.getElementById(`json-${fileId}`);
+        const editActions = document.getElementById(`edit-actions-${fileId}`);
+        const saveActions = document.getElementById(`save-actions-${fileId}`);
+        
+        if (!jsonEditor) {
+            throw new Error('JSON editor not found');
+        }
+        
+        const jsonData = jsonEditor.value;
+        if (!jsonData.trim()) {
+            throw new Error('No JSON data provided');
+        }
+        
+        // Validate JSON
+        try {
+            JSON.parse(jsonData);
+        } catch (e) {
+            throw new Error('Invalid JSON format: ' + e.message);
+        }
+        
+        // Update the file in the local array
+        const fileIndex = allFiles.findIndex(f => f.id === fileId);
+        if (fileIndex !== -1) {
+            allFiles[fileIndex].raw_json_data = jsonData;
+        }
+        
+        // Switch back to read-only view
+        jsonEditor.style.display = 'none';
+        jsonCode.style.display = 'block';
+        jsonCode.textContent = jsonData;
+        
+        // Show edit actions, hide save actions
+        editActions.style.display = 'block';
+        saveActions.style.display = 'none';
+        
+        showSuccess('JSON saved successfully');
+        
+    } catch (error) {
+        showError('Error saving JSON: ' + error.message);
+    }
+}
+
+async function enterOrder(fileId) {
+    try {
+        const file = allFiles.find(f => f.id === fileId);
+        if (!file) {
+            throw new Error('File not found');
+        }
+        
+        // Get JSON content (either from editor or from raw data)
+        const jsonEditor = document.getElementById(`json-editor-${fileId}`);
+        let jsonContent;
+        
+        if (jsonEditor && jsonEditor.style.display !== 'none') {
+            // User has edited the JSON
+            jsonContent = jsonEditor.value;
+            
+            // Validate JSON
+            try {
+                JSON.parse(jsonContent);
+            } catch (e) {
+                throw new Error('Invalid JSON format. Please fix the syntax errors.');
+            }
+        } else {
+            // Use original JSON
+            jsonContent = file.raw_json_data;
+        }
+        
+        // Send to Epicor
+        const response = await fetch(`/api/files/${fileId}/enter-order`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                json_data: jsonContent
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess('Order successfully entered into Epicor!');
+            
+            // Hide edit actions if they were visible
+            cancelEdit(fileId);
+        } else {
+            throw new Error(result.error || 'Failed to enter order');
+        }
+    } catch (error) {
+        showError('Error entering order: ' + error.message);
+    }
+}
+
+async function removeFile(fileId) {
+    if (!confirm('Are you sure you want to remove this file? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/files/${fileId}/delete`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSuccess('File removed successfully');
+            
+            // Remove the file from the local array
+            allFiles = allFiles.filter(f => f.id !== fileId);
+            
+            // Refresh the display
+            displayFiles();
+        } else {
+            throw new Error(result.message || 'Failed to remove file');
+        }
+    } catch (error) {
+        showError('Error removing file: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

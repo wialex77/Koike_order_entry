@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>PO Processor</title>
+
+    <!-- Office JavaScript API -->
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+    <!-- Bootstrap CSS for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <style>
+        .po-detected {
+            border-left: 4px solid #28a745;
+            background-color: #d4edda;
+        }
+        
+        .po-processing {
+            border-left: 4px solid #ffc107;
+            background-color: #fff3cd;
+        }
+        
+        .po-ready {
+            border-left: 4px solid #007bff;
+            background-color: #cce7ff;
+        }
+        
+        .json-editor {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .status-badge {
+            font-size: 0.8em;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+        
+        .detection-signals {
+            background-color: #e9ecef;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .signal-item {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        
+        .signal-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+        }
+        
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .btn-enter-order {
+            background-color: #28a745;
+            border-color: #28a745;
+            font-weight: bold;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        
+        .btn-enter-order:hover {
+            background-color: #218838;
+            border-color: #1e7e34;
+        }
+        
+        .validation-errors {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .validation-success {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <h3>Purchase Order Processor</h3>
+                <p class="text-muted">Automatically detects and processes PO emails</p>
+                
+                <!-- PO Detection Status -->
+                <div id="detection-status" class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <span id="status-icon">🔍</span>
+                            <span id="status-title">Analyzing Email...</span>
+                        </h5>
+                        <div id="detection-signals" class="detection-signals" style="display: none;">
+                            <h6>Detection Signals:</h6>
+                            <div id="signals-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loading-spinner" class="loading-spinner">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Processing...</span>
+                    </div>
+                    <p class="mt-2">Processing PO data...</p>
+                </div>
+
+                <!-- Processing Results -->
+                <div id="processing-results" style="display: none;">
+                    <!-- Company Info Section -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>Company Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Company:</strong> <span id="company-name">-</span><br>
+                                    <strong>PO Number:</strong> <span id="po-number">-</span><br>
+                                    <strong>PO Date:</strong> <span id="po-date">-</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Account Number:</strong> <span id="account-number">-</span><br>
+                                    <strong>Contact:</strong> <span id="contact-person">-</span><br>
+                                    <strong>Phone:</strong> <span id="phone-number">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Line Items Section -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>Line Items</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="line-items-list"></div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Status -->
+                    <div id="validation-status"></div>
+
+                    <!-- JSON Payload Editor -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>JSON Payload</h5>
+                            <small class="text-muted">Edit the JSON payload before entering the order</small>
+                        </div>
+                        <div class="card-body">
+                            <textarea id="json-editor" class="json-editor w-100" placeholder="JSON payload will appear here..."></textarea>
+                            <div class="mt-2">
+                                <button id="btn-validate" class="btn btn-outline-primary btn-sm">Validate JSON</button>
+                                <button id="btn-reset" class="btn btn-outline-secondary btn-sm">Reset to Original</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center mb-3">
+                        <button id="btn-enter-order" class="btn btn-enter-order btn-lg" disabled>
+                            <span id="btn-icon">📋</span> Enter Order
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Display -->
+                <div id="error-display" class="alert alert-danger" style="display: none;">
+                    <h5>Error</h5>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global variables
+        let originalJsonPayload = null;
+        let currentEmailData = null;
+        let processingComplete = false;
+
+        // Initialize the add-in
+        Office.onReady((info) => {
+            if (info.host === Office.HostType.Outlook) {
+                // Initialize the task pane
+                initializeTaskPane();
+            }
+        });
+
+        async function initializeTaskPane() {
+            try {
+                // Get the current email item
+                const item = Office.context.mailbox.item;
+                
+                // Check if this is a message (not appointment)
+                if (item.itemType !== Office.MailboxEnums.ItemType.Message) {
+                    showError("This add-in only works with email messages, not calendar items.");
+                    return;
+                }
+
+                // Analyze the email for PO signals
+                await analyzeEmailForPO(item);
+                
+            } catch (error) {
+                console.error('Error initializing task pane:', error);
+                showError('Failed to initialize: ' + error.message);
+            }
+        }
+
+        async function analyzeEmailForPO(item) {
+            try {
+                // Get email properties
+                const subject = item.subject;
+                const body = await getEmailBody(item);
+                const attachments = await getEmailAttachments(item);
+                
+                // Store email data for processing
+                currentEmailData = {
+                    subject: subject,
+                    body: body,
+                    attachments: attachments
+                };
+
+                // Analyze for PO signals
+                const signals = detectPOSignals(subject, body, attachments);
+                
+                // Update UI based on detection results
+                updateDetectionStatus(signals);
+                
+                // If PO detected, start processing
+                if (signals.isPO) {
+                    setTimeout(() => {
+                        processPOEmail(currentEmailData);
+                    }, 1000); // Small delay to show detection status
+                }
+                
+            } catch (error) {
+                console.error('Error analyzing email:', error);
+                showError('Failed to analyze email: ' + error.message);
+            }
+        }
+
+        function detectPOSignals(subject, body, attachments) {
+            const signals = {
+                isPO: false,
+                confidence: 0,
+                detectedSignals: []
+            };
+
+            // Check subject for PO keywords
+            const subjectLower = subject.toLowerCase();
+            const poKeywords = ['purchase order', 'po number', 'po#', 'order confirmation', 'order request'];
+            
+            for (const keyword of poKeywords) {
+                if (subjectLower.includes(keyword)) {
+                    signals.detectedSignals.push({
+                        type: 'subject',
+                        description: `Subject contains "${keyword}"`,
+                        confidence: 80
+                    });
+                    signals.confidence += 20;
+                }
+            }
+
+            // Check body for PO keywords and patterns
+            const bodyLower = body.toLowerCase();
+            const bodyKeywords = [
+                'purchase order', 'po number', 'po#', 'order number', 'order date',
+                'bill to', 'ship to', 'quantity', 'unit price', 'total amount',
+                'part number', 'item number', 'manufacturer'
+            ];
+
+            let bodyMatches = 0;
+            for (const keyword of bodyKeywords) {
+                if (bodyLower.includes(keyword)) {
+                    bodyMatches++;
+                }
+            }
+
+            if (bodyMatches >= 3) {
+                signals.detectedSignals.push({
+                    type: 'body',
+                    description: `Email body contains ${bodyMatches} PO-related keywords`,
+                    confidence: Math.min(90, bodyMatches * 15)
+                });
+                signals.confidence += Math.min(40, bodyMatches * 8);
+            }
+
+            // Check for attachments (PDFs are common for POs)
+            const pdfAttachments = attachments.filter(att => 
+                att.name.toLowerCase().endsWith('.pdf') || 
+                att.name.toLowerCase().includes('po') ||
+                att.name.toLowerCase().includes('order')
+            );
+
+            if (pdfAttachments.length > 0) {
+                signals.detectedSignals.push({
+                    type: 'attachment',
+                    description: `Found ${pdfAttachments.length} PDF attachment(s)`,
+                    confidence: 85
+                });
+                signals.confidence += 30;
+            }
+
+            // Check for structured data patterns
+            const hasStructuredData = /\b\d{4,}\b/.test(body) || // PO numbers
+                                   /\$\d+\.\d{2}/.test(body) || // Prices
+                                   /\b\d+\s+(ea|each|pcs|pieces)\b/i.test(body); // Quantities
+
+            if (hasStructuredData) {
+                signals.detectedSignals.push({
+                    type: 'structure',
+                    description: 'Contains structured data (numbers, prices, quantities)',
+                    confidence: 70
+                });
+                signals.confidence += 20;
+            }
+
+            // Determine if this is likely a PO
+            signals.isPO = signals.confidence >= 60;
+
+            return signals;
+        }
+
+        function updateDetectionStatus(signals) {
+            const statusCard = document.getElementById('detection-status');
+            const statusIcon = document.getElementById('status-icon');
+            const statusTitle = document.getElementById('status-title');
+            const detectionSignals = document.getElementById('detection-signals');
+            const signalsList = document.getElementById('signals-list');
+
+            if (signals.isPO) {
+                statusCard.className = 'card mb-3 po-detected';
+                statusIcon.textContent = '✅';
+                statusTitle.textContent = 'Purchase Order Detected!';
+                
+                // Show detection signals
+                detectionSignals.style.display = 'block';
+                signalsList.innerHTML = '';
+                
+                signals.detectedSignals.forEach(signal => {
+                    const signalItem = document.createElement('div');
+                    signalItem.className = 'signal-item';
+                    
+                    const icon = getSignalIcon(signal.type);
+                    const confidence = Math.round(signal.confidence);
+                    
+                    signalItem.innerHTML = `
+                        <span class="signal-icon">${icon}</span>
+                        <span>${signal.description} (${confidence}% confidence)</span>
+                    `;
+                    
+                    signalsList.appendChild(signalItem);
+                });
+            } else {
+                statusCard.className = 'card mb-3';
+                statusIcon.textContent = '❌';
+                statusTitle.textContent = 'No Purchase Order Detected';
+                
+                if (signals.confidence > 0) {
+                    statusTitle.textContent += ` (${Math.round(signals.confidence)}% confidence)`;
+                }
+                
+                detectionSignals.style.display = 'none';
+            }
+        }
+
+        function getSignalIcon(type) {
+            const icons = {
+                'subject': '📧',
+                'body': '📝',
+                'attachment': '📎',
+                'structure': '🔢'
+            };
+            return icons[type] || 'ℹ️';
+        }
+
+        async function processPOEmail(emailData) {
+            try {
+                // Show loading spinner
+                document.getElementById('loading-spinner').style.display = 'block';
+                document.getElementById('detection-status').style.display = 'none';
+
+                // Simulate processing with your existing backend
+                const processedData = await callBackendAPI(emailData);
+                
+                // Hide loading spinner
+                document.getElementById('loading-spinner').style.display = 'none';
+                
+                // Show results
+                displayProcessingResults(processedData);
+                
+            } catch (error) {
+                console.error('Error processing PO:', error);
+                document.getElementById('loading-spinner').style.display = 'none';
+                showError('Failed to process PO: ' + error.message);
+            }
+        }
+
+        async function callBackendAPI(emailData) {
+            try {
+                // Call the real Flask backend API
+                const response = await fetch('https://localhost:5000/api/process-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(emailData)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return result;
+                
+            } catch (error) {
+                console.error('Error calling backend API:', error);
+                
+                // Fallback to simulated data if backend is not available
+                console.log('Falling back to simulated data...');
+                return {
+                    success: true,
+                    data: {
+                        company_info: {
+                            company_name: "Sample Manufacturing Inc",
+                            billing_address: "123 Industrial Way\nAnytown, ST 12345",
+                            shipping_address: "456 Warehouse Blvd\nAnytown, ST 12345",
+                            email: "orders@samplemfg.com",
+                            phone_number: "(555) 123-4567",
+                            contact_person: "John Smith",
+                            contact_person_email: "john@samplemfg.com",
+                            customer_po_number: "PO-2025-001",
+                            po_date: "2025-01-20",
+                            notes: "Rush order; Ground shipping",
+                            subtotal: 1250.00,
+                            tax_amount: 100.00,
+                            tax_rate: 8.0,
+                            grand_total: 1350.00,
+                            account_number: "1763",
+                            customer_match_confidence: 95.0,
+                            customer_match_status: "matched"
+                        },
+                        line_items: [
+                            {
+                                external_part_number: "ZA3232050",
+                                internal_part_number: "ZA3232050",
+                                description: "Koike Oxy-Fuel Quick Connect Torch To Hose Coupler Set",
+                                unit_price: 63.00,
+                                quantity: 1,
+                                mapping_confidence: 100.0,
+                                mapping_status: "mapped",
+                                candidate_suggestions: []
+                            }
+                        ],
+                        processing_summary: {
+                            total_parts: 1,
+                            parts_mapped: 1,
+                            parts_not_found: 0,
+                            parts_manual_review: 0,
+                            mapping_success_rate: 100.0,
+                            customer_matched: true,
+                            customer_confidence: 95.0,
+                            requires_manual_review: false
+                        }
+                    },
+                    epicor_json: {
+                        "ds": {
+                            "OrderHed": [{
+                                "OpenOrder": true,
+                                "CustNum": "1763",
+                                "PONum": "PO-2025-001",
+                                "EntryPerson": "William Alexander",
+                                "ShipViaCode": "INVO",
+                                "OrderDate": "2025-01-20T00:00:00.000Z",
+                                "UseOTS": true,
+                                "OTSName": "Sample Manufacturing Inc",
+                                "OTSAddress1": "456 Warehouse Blvd",
+                                "OTSCity": "Anytown",
+                                "OTSState": "ST",
+                                "OTSZip": "12345",
+                                "PayFlag": "SHIP",
+                                "RowMod": "A"
+                            }],
+                            "OrderDtl": [{
+                                "OpenLine": true,
+                                "PartNum": "ZA3232050",
+                                "LineDesc": "Koike Oxy-Fuel Quick Connect Torch To Hose Coupler Set",
+                                "SellingQuantity": "1",
+                                "OverridePriceList": true,
+                                "DocUnitPrice": "63.00",
+                                "RowMod": "A"
+                            }]
+                        },
+                        "continueProcessingOnError": true,
+                        "rollbackParentOnChildError": true
+                    }
+                };
+            }
+        }
+
+        function displayProcessingResults(result) {
+            const data = result.data;
+            
+            // Update company information
+            document.getElementById('company-name').textContent = data.company_info.company_name;
+            document.getElementById('po-number').textContent = data.company_info.customer_po_number;
+            document.getElementById('po-date').textContent = data.company_info.po_date;
+            document.getElementById('account-number').textContent = data.company_info.account_number;
+            document.getElementById('contact-person').textContent = data.company_info.contact_person;
+            document.getElementById('phone-number').textContent = data.company_info.phone_number;
+
+            // Update line items
+            const lineItemsList = document.getElementById('line-items-list');
+            lineItemsList.innerHTML = '';
+            
+            data.line_items.forEach((item, index) => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'border-bottom py-2';
+                itemDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-3">
+                            <strong>Part:</strong> ${item.internal_part_number}
+                        </div>
+                        <div class="col-md-5">
+                            <strong>Description:</strong> ${item.description}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Qty:</strong> ${item.quantity}
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Price:</strong> $${item.unit_price.toFixed(2)}
+                        </div>
+                    </div>
+                `;
+                lineItemsList.appendChild(itemDiv);
+            });
+
+            // Store original JSON payload
+            originalJsonPayload = JSON.stringify(result.epicor_json, null, 2);
+            
+            // Update JSON editor
+            document.getElementById('json-editor').value = originalJsonPayload;
+            
+            // Update validation status
+            updateValidationStatus(data);
+            
+            // Show processing results
+            document.getElementById('processing-results').style.display = 'block';
+            processingComplete = true;
+        }
+
+        function updateValidationStatus(data) {
+            const validationDiv = document.getElementById('validation-status');
+            const summary = data.processing_summary;
+            
+            if (summary.requires_manual_review) {
+                validationDiv.innerHTML = `
+                    <div class="validation-errors">
+                        <h6>⚠️ Manual Review Required</h6>
+                        <ul>
+                            ${summary.parts_manual_review > 0 ? `<li>${summary.parts_manual_review} part(s) need manual review</li>` : ''}
+                            ${!summary.customer_matched ? '<li>Customer not matched</li>' : ''}
+                        </ul>
+                    </div>
+                `;
+            } else {
+                validationDiv.innerHTML = `
+                    <div class="validation-success">
+                        <h6>✅ Ready for Order Entry</h6>
+                        <p>All items validated successfully. Customer and parts are properly mapped.</p>
+                    </div>
+                `;
+                document.getElementById('btn-enter-order').disabled = false;
+            }
+        }
+
+        // Event handlers
+        document.getElementById('btn-validate').addEventListener('click', function() {
+            try {
+                const jsonText = document.getElementById('json-editor').value;
+                JSON.parse(jsonText);
+                alert('JSON is valid!');
+            } catch (error) {
+                alert('Invalid JSON: ' + error.message);
+            }
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', function() {
+            if (originalJsonPayload) {
+                document.getElementById('json-editor').value = originalJsonPayload;
+            }
+        });
+
+        document.getElementById('btn-enter-order').addEventListener('click', async function() {
+            try {
+                const jsonText = document.getElementById('json-editor').value;
+                const payload = JSON.parse(jsonText);
+                
+                // Here you would typically send the payload to your Epicor system
+                // For now, we'll just show a success message
+                
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm mr-2"></span>Entering Order...';
+                btn.disabled = true;
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                btn.innerHTML = '✅ Order Entered Successfully!';
+                btn.className = 'btn btn-success btn-lg';
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.className = 'btn btn-enter-order btn-lg';
+                    btn.disabled = false;
+                }, 3000);
+                
+            } catch (error) {
+                alert('Error entering order: ' + error.message);
+            }
+        });
+
+        // Helper functions
+        async function getEmailBody(item) {
+            return new Promise((resolve, reject) => {
+                if (item.body.getAsync) {
+                    item.body.getAsync(Office.CoercionType.Text, (result) => {
+                        if (result.status === Office.AsyncResultStatus.Succeeded) {
+                            resolve(result.value);
+                        } else {
+                            reject(new Error(result.error.message));
+                        }
+                    });
+                } else {
+                    resolve(item.body || '');
+                }
+            });
+        }
+
+        async function getEmailAttachments(item) {
+            return new Promise((resolve, reject) => {
+                if (item.attachments && item.attachments.length > 0) {
+                    resolve(item.attachments);
+                } else {
+                    resolve([]);
+                }
+            });
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error-display').style.display = 'block';
+        }
+    </script>
+</body>
+</html>

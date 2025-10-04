@@ -1,0 +1,752 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Purchase Order - PO Processor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fas fa-cloud-upload-alt"></i> Upload Purchase Order Document</h3>
+                <p class="text-muted mb-0">Upload PDF, Word, or image files containing purchase orders</p>
+            </div>
+            <div class="card-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-file-upload fa-3x text-muted mb-3"></i>
+                        <h4>Drag & Drop Files Here</h4>
+                        <p class="text-muted">or click to browse</p>
+                        <input type="file" id="fileInput" name="file" class="d-none" 
+                               accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.bmp,.tiff">
+                        <button type="button" class="btn btn-outline-primary" id="browseBtn">
+                            <i class="fas fa-folder-open"></i> Browse Files
+                        </button>
+                    </div>
+                    
+                    <div id="fileInfo" class="mt-3" style="display: none;">
+                        <div class="alert alert-info">
+                            <strong>Selected File:</strong> <span id="fileName"></span><br>
+                            <strong>Size:</strong> <span id="fileSize"></span><br>
+                            <strong>Type:</strong> <span id="fileType"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                            <i class="fas fa-upload"></i> Process Purchase Order
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="processing text-center" id="processing">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Processing...</span>
+                    </div>
+                    <h5 class="mt-3">Processing Document...</h5>
+                    <p class="text-muted" id="processingStatus">Initializing...</p>
+                    <div class="progress mt-3" style="height: 25px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                             id="progressBar"
+                             role="progressbar" 
+                             style="width: 0%" 
+                             aria-valuenow="0" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="result-section" id="results">
+                    <hr>
+                    <h4><i class="fas fa-check-circle text-success"></i> Processing Complete</h4>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-building"></i> Company Information</h5>
+                                </div>
+                                <div class="card-body" id="companyInfo">
+                                    <!-- Company info will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-chart-bar"></i> Processing Summary</h5>
+                                </div>
+                                <div class="card-body" id="processingSummary">
+                                    <!-- Processing summary will be populated here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list"></i> Line Items</h5>
+                        </div>
+                        <div class="card-body" id="lineItems">
+                            <!-- Line items will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4" id="reviewSection" style="display: none;">
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Manual Review Required</h5>
+                            <div id="reviewItems">
+                                <!-- Review items will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid mt-4">
+                        <button class="btn btn-success btn-lg" id="downloadBtn" disabled>
+                            <i class="fas fa-download"></i> Download Epicor JSON
+                        </button>
+                        <small class="text-muted mt-2" id="downloadStatus">
+                            Complete all mappings to enable download
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let processedFileName = '';
+
+// File upload handling
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const uploadForm = document.getElementById('uploadForm');
+const browseBtn = document.getElementById('browseBtn');
+
+// Drag and drop functionality
+uploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    uploadArea.classList.add('dragover');
+});
+
+uploadArea.addEventListener('dragleave', () => {
+    uploadArea.classList.remove('dragover');
+});
+
+uploadArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadArea.classList.remove('dragover');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        fileInput.files = files;
+        showFileInfo(files[0]);
+    }
+});
+
+// Handle upload area click - but prevent double triggering
+uploadArea.addEventListener('click', (e) => {
+    // Only trigger if we're not clicking the browse button
+    if (e.target !== browseBtn && !browseBtn.contains(e.target)) {
+        fileInput.click();
+    }
+});
+
+// Handle browse button click separately
+browseBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); // Prevent event bubbling to uploadArea
+    fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+        showFileInfo(e.target.files[0]);
+    }
+});
+
+function showFileInfo(file) {
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatFileSize(file.size);
+    document.getElementById('fileType').textContent = file.type || 'Unknown';
+    fileInfo.style.display = 'block';
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Progress tracking functions
+        function updateProgress(percentage, status) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            const statusText = document.getElementById('processingStatus');
+            
+            progressBar.style.width = percentage + '%';
+            progressBar.setAttribute('aria-valuenow', percentage);
+            progressText.textContent = percentage + '%';
+            
+            if (status) {
+                statusText.textContent = status;
+            }
+        }
+
+        function startProgressTracking() {
+            const eventSource = new EventSource('/progress');
+            
+            eventSource.onmessage = function(event) {
+                const progressData = JSON.parse(event.data);
+                updateProgress(progressData.percentage, progressData.status);
+                
+                // Close the connection when complete
+                if (progressData.percentage >= 100) {
+                    eventSource.close();
+                }
+            };
+            
+            eventSource.onerror = function(event) {
+                console.error('Progress tracking error:', event);
+                eventSource.close();
+            };
+            
+            return eventSource;
+        }
+
+// Form submission
+uploadForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(uploadForm);
+    if (!formData.get('file') || formData.get('file').name === '') {
+        alert('Please select a file first');
+        return;
+    }
+    
+        // Show processing state and start real-time progress tracking
+        document.getElementById('uploadBtn').style.display = 'none';
+        document.getElementById('processing').style.display = 'block';
+        document.getElementById('results').style.display = 'none';
+        
+        const progressTracker = startProgressTracking();
+    
+    try {
+        const response = await fetch('/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            setTimeout(() => {
+                processedFileName = result.processed_file;
+                displayResults(result.data, result.review_report, result.validation);
+            }, 500);
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error) {
+        progressTracker.close();
+        alert('Error processing file: ' + error.message);
+    } finally {
+        setTimeout(() => {
+            document.getElementById('processing').style.display = 'none';
+            document.getElementById('uploadBtn').style.display = 'block';
+        }, 1000);
+    }
+});
+
+function displayResults(data, reviewReport, validation) {
+    // Display company information
+    const companyInfo = document.getElementById('companyInfo');
+    const companyData = data.company_info;
+    
+    // Check if customer needs manual correction
+    const needsCustomerCorrection = companyData.customer_match_confidence < 95 || companyData.customer_match_status !== 'matched';
+    
+    companyInfo.innerHTML = `
+        <p><strong>Company:</strong> ${companyData.company_name}</p>
+        <p><strong>Customer PO Number:</strong> <span class="text-primary">${companyData.customer_po_number || 'Not Found'}</span></p>
+        <p><strong>PO Date:</strong> <span class="text-info">${companyData.po_date || 'Not Found'}</span></p>
+        <p><strong>Billing Address:</strong> ${companyData.billing_address}</p>
+        <p><strong>Shipping Address:</strong> ${companyData.shipping_address}</p>
+        <p><strong>Shipping Method:</strong> <span class="text-warning">${companyData.shipping_method || 'GROUND'}</span></p>
+        <p><strong>Shipping Account:</strong> <span class="text-info">${companyData.shipping_account_number || 'prepaid & add'}</span></p>
+        <p><strong>Email:</strong> ${companyData.email}</p>
+        <p><strong>Phone:</strong> ${companyData.phone_number}</p>
+        <p><strong>Contact:</strong> ${companyData.contact_person}</p>
+        <p><strong>Contact Email:</strong> ${companyData.contact_person_email}</p>
+        <p><strong>Account Number:</strong> 
+            ${needsCustomerCorrection ? 
+                `<div class="input-group">
+                    <select class="form-select" id="customerAccountSelect">
+                        <option value="">Select Account Number...</option>
+                    </select>
+                    <button class="btn btn-outline-success" type="button" onclick="saveCustomerMapping()">
+                        <i class="fas fa-save"></i> Save
+                    </button>
+                </div>
+                <small class="text-warning">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    Manual review required (${companyData.customer_match_confidence.toFixed(1)}% confidence)
+                </small>` :
+                `<span class="status-${companyData.customer_match_status}">${companyData.account_number || 'Not Found'}</span>`
+            }
+        </p>
+        <p><strong>Match Confidence:</strong> 
+            <span class="confidence-${getConfidenceClass(companyData.customer_match_confidence)}">${companyData.customer_match_confidence.toFixed(1)}%</span>
+        </p>
+        ${companyData.notes ? `<div class="alert alert-info mt-3"><strong>Notes:</strong> ${companyData.notes}</div>` : ''}
+    `;
+    
+    // Display processing summary
+    const summary = data.processing_summary;
+    document.getElementById('processingSummary').innerHTML = `
+        <p><strong>Total Parts:</strong> ${summary.total_parts}</p>
+        <p><strong>Parts Mapped:</strong> <span class="text-success">${summary.parts_mapped}</span></p>
+        <p><strong>Parts Not Found:</strong> <span class="text-danger">${summary.parts_not_found}</span></p>
+        <p><strong>Manual Review:</strong> <span class="text-warning">${summary.parts_manual_review}</span></p>
+        <p><strong>Success Rate:</strong> ${summary.mapping_success_rate.toFixed(1)}%</p>
+        <p><strong>Customer Matched:</strong> ${summary.customer_matched ? 'Yes' : 'No'}</p>
+    `;
+    
+    // Display line items
+    const lineItems = document.getElementById('lineItems');
+    let itemsHtml = '';
+    let calculatedSubtotal = 0;
+    
+    data.line_items.forEach((item, index) => {
+        const lineTotal = item.unit_price * item.quantity;
+        calculatedSubtotal += lineTotal;
+        
+        const needsPartCorrection = item.mapping_status !== 'mapped' || item.mapping_confidence < 95 || !item.internal_part_number;
+        const hasInsufficientInfo = item.mapping_confidence < 70 || (item.candidate_suggestions && item.candidate_suggestions.length > 0 && item.candidate_suggestions[0].internal_part_number === 'INSUFFICIENT_INFO');
+        
+        itemsHtml += `
+            <div class="line-item">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong>External:</strong> ${item.external_part_number}<br>
+                        <strong>Internal:</strong> 
+                        ${needsPartCorrection ? 
+                            `<div class="mt-1">
+                                <!-- Dropdown for candidates (if any exist) -->
+                                ${hasInsufficientInfo ? '' : 
+                                    `<div class="input-group mb-2">
+                                        <select class="form-select" id="partSelect_${index}">
+                                            <option value="">Select from candidates...</option>
+                                        </select>
+                                        <button class="btn btn-outline-success" type="button" onclick="savePartMapping(${index})">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </div>`
+                                }
+                                
+                                <!-- Manual text input (always available for items below 95%) -->
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="partInput_${index}" placeholder="Or enter part number manually...">
+                                    <button class="btn btn-outline-primary" type="button" onclick="saveManualPartMapping(${index})">
+                                        <i class="fas fa-keyboard"></i>
+                                    </button>
+                                </div>
+                                
+                                <small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    Manual review required (${item.mapping_confidence.toFixed(1)}% confidence)
+                                    ${hasInsufficientInfo ? ' - Not enough information in PO' : ''}
+                                </small>
+                            </div>` :
+                            `<span class="status-${item.mapping_status}">${item.internal_part_number || 'Not Mapped'}</span>`
+                        }<br>
+                        <strong>Description:</strong> ${item.description}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Price:</strong> $${item.unit_price.toFixed(2)}<br>
+                        <strong>Quantity:</strong> ${item.quantity}<br>
+                        <strong>Line Total:</strong> $${lineTotal.toFixed(2)}<br>
+                        <strong>Status:</strong> <span class="status-${item.mapping_status}">${item.mapping_status}</span><br>
+                        <strong>Confidence:</strong> <span class="confidence-${getConfidenceClass(item.mapping_confidence)}">${item.mapping_confidence.toFixed(1)}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Add totals section
+    const displaySubtotal = (companyData.subtotal && companyData.subtotal > 0) ? companyData.subtotal : calculatedSubtotal;
+    const taxAmount = companyData.tax_amount || 0;
+    const displayGrandTotal = (companyData.grand_total && companyData.grand_total > 0) ? companyData.grand_total : (displaySubtotal + taxAmount);
+    
+    itemsHtml += `
+        <div class="totals-section mt-4 pt-3 border-top">
+            <div class="row">
+                <div class="col-md-6 offset-md-6">
+                    <div class="totals-box">
+                        <div class="d-flex justify-content-between">
+                            <strong>Subtotal:</strong>
+                            <span>$${displaySubtotal.toFixed(2)}</span>
+                        </div>
+                        ${taxAmount > 0 ? `
+                            <div class="d-flex justify-content-between">
+                                <strong>Tax ${(companyData.tax_rate && companyData.tax_rate > 0) ? `(${companyData.tax_rate}%)` : ''}:</strong>
+                                <span>$${taxAmount.toFixed(2)}</span>
+                            </div>
+                        ` : ''}
+                        <div class="d-flex justify-content-between border-top pt-2 mt-2">
+                            <strong class="text-primary">Grand Total:</strong>
+                            <strong class="text-primary">$${displayGrandTotal.toFixed(2)}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    lineItems.innerHTML = itemsHtml;
+    
+    // Display review section if needed
+    if (reviewReport && reviewReport.requires_review) {
+        const reviewSection = document.getElementById('reviewSection');
+        const reviewItems = document.getElementById('reviewItems');
+        let reviewHtml = '<ul>';
+        reviewReport.items.forEach(item => {
+            reviewHtml += `<li><strong>${item.type.toUpperCase()}:</strong> ${item.issue} (Confidence: ${item.confidence.toFixed(1)}%)</li>`;
+        });
+        reviewHtml += '</ul>';
+        reviewItems.innerHTML = reviewHtml;
+        reviewSection.style.display = 'block';
+    } else {
+        // Hide review section if no review needed
+        const reviewSection = document.getElementById('reviewSection');
+        if (reviewSection) {
+            reviewSection.style.display = 'none';
+        }
+    }
+    
+    // Set global variables
+    currentData = data;
+    currentValidation = validation;
+    
+    // Update download button state
+    updateDownloadButton();
+    
+    // Load dropdown options and display results
+    document.getElementById('results').style.display = 'block';
+    
+    // Load dropdown options after a short delay to ensure DOM is ready
+    setTimeout(() => {
+        loadDropdownOptions();
+    }, 100);
+}
+
+function getConfidenceClass(confidence) {
+    if (confidence >= 80) return 'high';
+    if (confidence >= 60) return 'medium';
+    return 'low';
+}
+
+// Download functionality
+document.getElementById('downloadBtn').addEventListener('click', () => {
+    if (processedFileName) {
+        window.location.href = '/download/' + processedFileName;
+    }
+});
+
+// Global variables for current data
+let currentData = null;
+let currentValidation = null;
+
+// Simple similarity calculation function
+function calculateSimilarity(str1, str2) {
+    // Simple Levenshtein distance-based similarity
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) return 100;
+    
+    const distance = levenshteinDistance(longer, shorter);
+    return ((longer.length - distance) / longer.length) * 100;
+}
+
+function levenshteinDistance(str1, str2) {
+    const matrix = [];
+    
+    for (let i = 0; i <= str2.length; i++) {
+        matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str1.length; j++) {
+        matrix[0][j] = j;
+    }
+    
+    for (let i = 1; i <= str2.length; i++) {
+        for (let j = 1; j <= str1.length; j++) {
+            if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+                matrix[i][j] = matrix[i - 1][j - 1];
+            } else {
+                matrix[i][j] = Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                );
+            }
+        }
+    }
+    
+    return matrix[str2.length][str1.length];
+}
+
+// Load customer and part options when page loads
+async function loadDropdownOptions() {
+    try {
+        // Load customers - show only top 3 matches for the current company
+        const customerSelect = document.getElementById('customerAccountSelect');
+        if (customerSelect && customerSelect.children.length <= 1) {
+            // Get the company name from current data to find best matches
+            const companyName = currentData?.company_info?.company_name || '';
+            
+            if (companyName) {
+                // Get customer suggestions based on company name match
+                try {
+                    const customersResponse = await fetch('/api/databases/customers');
+                    const customersData = await customersResponse.json();
+                    
+                    if (customersData.customers) {
+                        // Find top 3 customer matches using fuzzy matching
+                        const customerMatches = customersData.customers.map(customer => {
+                            // Simple similarity calculation
+                            const similarity = calculateSimilarity(companyName.toLowerCase(), customer.company_name.toLowerCase());
+                            return {
+                                ...customer,
+                                similarity: similarity
+                            };
+                        }).sort((a, b) => b.similarity - a.similarity).slice(0, 3);
+                        
+                        // Add header
+                        const header = document.createElement('option');
+                        header.disabled = true;
+                        header.textContent = '🎯 Top 3 Customer Matches';
+                        header.style.fontWeight = 'bold';
+                        header.style.backgroundColor = '#e3f2fd';
+                        customerSelect.appendChild(header);
+                        
+                        // Add top 3 matches
+                        customerMatches.forEach(customer => {
+                            const option = document.createElement('option');
+                            option.value = customer.account_number;
+                            option.textContent = `${customer.account_number} - ${customer.company_name} (${Math.round(customer.similarity)}%)`;
+                            
+                            // Color code by similarity
+                            if (customer.similarity > 80) {
+                                option.style.backgroundColor = '#d4edda'; // Green
+                            } else if (customer.similarity > 60) {
+                                option.style.backgroundColor = '#fff3cd'; // Yellow
+                            } else {
+                                option.style.backgroundColor = '#f8d7da'; // Red
+                            }
+                            
+                            customerSelect.appendChild(option);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error loading customer matches:', error);
+                }
+            }
+        }
+        
+        // Load parts - Use candidate suggestions instead of all 213k parts!
+        if (currentData && currentData.line_items) {
+            for (let i = 0; i < currentData.line_items.length; i++) {
+                const item = currentData.line_items[i];
+                const partSelect = document.getElementById(`partSelect_${i}`);
+                
+                if (partSelect && partSelect.children.length <= 1) {
+                    // Populate dropdown with good candidates (70%+) if they exist
+                    if (item.candidate_suggestions && item.candidate_suggestions.length > 0) {
+                        const firstCandidate = item.candidate_suggestions[0];
+                        
+                        // Skip if confidence is below 70% or if this is the "INSUFFICIENT_INFO" case
+                        if (item.mapping_confidence < 70 || firstCandidate.internal_part_number === 'INSUFFICIENT_INFO') {
+                            console.log(`Skipping dropdown population for item ${i} - insufficient info (confidence: ${item.mapping_confidence}%)`);
+                            continue;
+                        }
+                        
+                        // Add candidates with 70%+ confidence
+                        const goodCandidates = item.candidate_suggestions.filter(c => c.confidence >= 70);
+                        if (goodCandidates.length > 0) {
+                            // Add header for candidates
+                            const header = document.createElement('option');
+                            header.disabled = true;
+                            header.textContent = '🎯 Top Matches (70%+)';
+                            header.style.fontWeight = 'bold';
+                            header.style.backgroundColor = '#e3f2fd';
+                            partSelect.appendChild(header);
+                            
+                            // Add high-confidence candidates
+                            goodCandidates.slice(0, 3).forEach(candidate => {
+                                const option = document.createElement('option');
+                                option.value = candidate.internal_part_number;
+                                option.textContent = `${candidate.internal_part_number} - ${candidate.description ? candidate.description.substring(0, 40) : 'No description'}... (${candidate.confidence}%)`;
+                                
+                                // Color code by confidence
+                                if (candidate.confidence > 90) {
+                                    option.style.backgroundColor = '#d4edda'; // Green
+                                } else if (candidate.confidence > 80) {
+                                    option.style.backgroundColor = '#d1ecf1'; // Light blue
+                                } else {
+                                    option.style.backgroundColor = '#fff3cd'; // Yellow
+                                }
+                                
+                                partSelect.appendChild(option);
+                            });
+                        } else {
+                            console.log(`No good candidates (70%+) for item ${i} - dropdown will be empty, text input available`);
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading dropdown options:', error);
+    }
+}
+
+// Save customer mapping
+async function saveCustomerMapping() {
+    const customerSelect = document.getElementById('customerAccountSelect');
+    const accountNumber = customerSelect.value;
+    
+    if (!accountNumber) {
+        alert('Please select an account number');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/update-customer/${processedFileName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ account_number: accountNumber })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentData = result.data;
+            currentValidation = result.validation;
+            updateDownloadButton();
+            // Refresh the display
+            displayResults(currentData, null, currentValidation);
+            await loadDropdownOptions(); // Reload options
+        } else {
+            alert('Error updating customer mapping: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error saving customer mapping: ' + error.message);
+    }
+}
+
+// Save manual part mapping (from text input)
+async function saveManualPartMapping(lineIndex) {
+    const partInput = document.getElementById(`partInput_${lineIndex}`);
+    const internalPartNumber = partInput.value.trim();
+    
+    if (!internalPartNumber) {
+        alert('Please enter a part number');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/update-part/${processedFileName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                line_index: lineIndex,
+                internal_part_number: internalPartNumber
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Reload the results with updated data
+            displayResults(result.data, result.review_report, result.validation);
+        } else {
+            alert('Error updating part mapping: ' + result.error);
+        }
+        
+    } catch (error) {
+        alert('Error updating part mapping: ' + error.message);
+    }
+}
+
+// Save part mapping
+async function savePartMapping(lineIndex) {
+    const partSelect = document.getElementById(`partSelect_${lineIndex}`);
+    const internalPartNumber = partSelect.value;
+    
+    if (!internalPartNumber) {
+        alert('Please select a part number');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/update-part/${processedFileName}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                line_index: lineIndex,
+                internal_part_number: internalPartNumber 
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            currentData = result.data;
+            currentValidation = result.validation;
+            updateDownloadButton();
+            // Refresh the display
+            displayResults(currentData, null, currentValidation);
+            await loadDropdownOptions(); // Reload options
+        } else {
+            alert('Error updating part mapping: ' + result.error);
+        }
+    } catch (error) {
+        alert('Error saving part mapping: ' + error.message);
+    }
+}
+
+// Update download button based on validation
+function updateDownloadButton() {
+    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadStatus = document.getElementById('downloadStatus');
+    
+    if (currentValidation && currentValidation.is_valid) {
+        downloadBtn.disabled = false;
+        downloadBtn.classList.remove('btn-secondary');
+        downloadBtn.classList.add('btn-success');
+        downloadStatus.textContent = 'Ready to export to Epicor format';
+        downloadStatus.className = 'text-success mt-2';
+    } else {
+        downloadBtn.disabled = true;
+        downloadBtn.classList.remove('btn-success');
+        downloadBtn.classList.add('btn-secondary');
+        downloadStatus.textContent = 'Complete all mappings to enable download';
+        downloadStatus.className = 'text-muted mt-2';
+    }
+}
+</script>
+{% endblock %}

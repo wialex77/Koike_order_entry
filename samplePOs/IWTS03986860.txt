@@ -1,0 +1,35 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "854",
+        "PONum": "2165415",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-09-23T17:12:14.504008Z",
+        "UseOTS": true,
+        "OTSName": "Gas and Supply - Tulsa",
+        "OTSAddress1": "8595 W 81st St S",
+        "OTSCity": "Tulsa",
+        "OTSState": "OK",
+        "OTSZip": "74131",
+        "PayFlag": "SHIP",
+        "RowMod": "A"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "30623",
+        "LineDesc": "GMT KOIKE PINION, TILT, C1141-CR",
+        "SellingQuantity": "1",
+        "OverridePriceList": true,
+        "DocUnitPrice": "558.22",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

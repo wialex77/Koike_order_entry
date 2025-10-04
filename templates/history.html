@@ -1,0 +1,400 @@
+{% extends "base.html" %}
+
+{% block title %}Processing History - PO Processor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-history"></i> Processing History</h2>
+        <p class="text-muted">View previously processed purchase orders</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-file-alt"></i> Processed Files</h5>
+            </div>
+            <div class="card-body">
+                {% if files %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Filename</th>
+                                    <th>Processed Date</th>
+                                    <th>File Size</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for file in files %}
+                                <tr>
+                                    <td>
+                                        <i class="fas fa-file-code text-primary"></i>
+                                        {{ file.filename }}
+                                    </td>
+                                    <td>{{ file.created }}</td>
+                                    <td>{{ "%.2f"|format(file.size / 1024) }} KB</td>
+                                    <td>
+                                        <a href="{{ url_for('download_file', filename=file.filename) }}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-download"></i> Download
+                                        </a>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                onclick="previewFile('{{ file.filename }}')">
+                                            <i class="fas fa-eye"></i> Preview
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">No Processed Files</h4>
+                        <p class="text-muted">Upload and process some purchase orders to see them here.</p>
+                        <a href="{{ url_for('index') }}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload Purchase Order
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Preview Modal -->
+<div class="modal fade" id="previewModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-eye"></i> File Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="previewContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading preview...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="downloadFromPreview">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentPreviewFile = '';
+
+async function previewFile(filename) {
+    currentPreviewFile = filename;
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('previewModal'));
+    modal.show();
+    
+    // Reset content
+    document.getElementById('previewContent').innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading preview...</p>
+        </div>
+    `;
+    
+    try {
+        // Fetch the file content in Epicor format
+        const response = await fetch('/api/preview/' + filename);
+        
+        if (!response.ok) {
+            throw new Error('Failed to load file');
+        }
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Display the Epicor format
+            displayEpicorPreview(result.epicor_format);
+        } else {
+            throw new Error(result.error);
+        }
+        
+    } catch (error) {
+        document.getElementById('previewContent').innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i>
+                Error loading file: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displayEpicorPreview(epicorData) {
+    const orderHed = epicorData.ds.OrderHed[0];
+    const orderDtl = epicorData.ds.OrderDtl || [];
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-building"></i> Order Header (Epicor Format)</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Customer Number:</strong> <span class="text-primary">${orderHed.CustNum}</span></p>
+                        <p><strong>PO Number:</strong> <span class="text-info">${orderHed.PONum}</span></p>
+                        <p><strong>Order Date:</strong> ${orderHed.OrderDate}</p>
+                        <p><strong>Entry Person:</strong> ${orderHed.EntryPerson}</p>
+                        <p><strong>Ship Via:</strong> ${orderHed.ShipViaCode}</p>
+                        <p><strong>Pay Flag:</strong> ${orderHed.PayFlag}</p>
+                        <p><strong>Open Order:</strong> ${orderHed.OpenOrder ? 'Yes' : 'No'}</p>
+                        ${orderHed.UseOTS ? `
+                            <div class="mt-3">
+                                <h6>Ship To Address (OTS):</h6>
+                                <p><strong>Name:</strong> ${orderHed.OTSName || 'N/A'}</p>
+                                <p><strong>Address:</strong> ${orderHed.OTSAddress1 || 'N/A'}</p>
+                                <p><strong>City:</strong> ${orderHed.OTSCity || 'N/A'}</p>
+                                <p><strong>State:</strong> ${orderHed.OTSState || 'N/A'}</p>
+                                <p><strong>ZIP:</strong> ${orderHed.OTSZip || 'N/A'}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-chart-bar"></i> Processing Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Line Items:</strong> ${orderDtl.length}</p>
+                        <p><strong>Continue on Error:</strong> ${epicorData.continueProcessingOnError ? 'Yes' : 'No'}</p>
+                        <p><strong>Rollback on Error:</strong> ${epicorData.rollbackParentOnChildError ? 'Yes' : 'No'}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-list"></i> Order Details (${orderDtl.length} items)</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Part Number</th>
+                                <th>Description</th>
+                                <th>Quantity</th>
+                                <th>Unit Price</th>
+                                <th>Line Total</th>
+                                <th>Open Line</th>
+                                <th>Override Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    let calculatedTotal = 0;
+    orderDtl.forEach(item => {
+        const lineTotal = parseFloat(item.DocUnitPrice) * parseInt(item.SellingQuantity);
+        calculatedTotal += lineTotal;
+        
+        html += `
+            <tr>
+                <td><code>${item.PartNum}</code></td>
+                <td>${item.LineDesc}</td>
+                <td>${item.SellingQuantity}</td>
+                <td>$${parseFloat(item.DocUnitPrice).toFixed(2)}</td>
+                <td>$${lineTotal.toFixed(2)}</td>
+                <td><span class="badge bg-${item.OpenLine ? 'success' : 'secondary'}">${item.OpenLine ? 'Open' : 'Closed'}</span></td>
+                <td><span class="badge bg-${item.OverridePriceList ? 'warning' : 'secondary'}">${item.OverridePriceList ? 'Yes' : 'No'}</span></td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                        </tbody>
+                        <tfoot>
+                            <tr class="table-primary">
+                                <th colspan="4">Total:</th>
+                                <th>$${calculatedTotal.toFixed(2)}</th>
+                                <th colspan="2"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('previewContent').innerHTML = html;
+}
+
+function displayPreview(data) {
+    const company = data.company_info;
+    const summary = data.processing_summary;
+    
+    let html = `
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-building"></i> Company Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Company:</strong> ${company.company_name}</p>
+                        <p><strong>Customer PO:</strong> <span class="text-primary">${company.customer_po_number || 'Not Found'}</span></p>
+                        <p><strong>PO Date:</strong> <span class="text-info">${company.po_date || 'Not Found'}</span></p>
+                        <p><strong>Account Number:</strong> 
+                            <span class="badge bg-${company.customer_match_status === 'matched' ? 'success' : 'warning'}">
+                                ${company.account_number || 'Not Found'}
+                            </span>
+                        </p>
+                        <p><strong>Billing Address:</strong> ${company.billing_address || 'N/A'}</p>
+                        <p><strong>Shipping Address:</strong> ${company.shipping_address || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${company.email}</p>
+                        <p><strong>Phone:</strong> ${company.phone_number}</p>
+                        <p><strong>Contact:</strong> ${company.contact_person}</p>
+                        <p><strong>Match Confidence:</strong> ${company.customer_match_confidence.toFixed(1)}%</p>
+                        ${company.notes ? `<div class="alert alert-info mt-2"><strong>Notes:</strong> ${company.notes}</div>` : ''}
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="fas fa-chart-bar"></i> Processing Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Total Parts:</strong> ${summary.total_parts}</p>
+                        <p><strong>Parts Mapped:</strong> <span class="text-success">${summary.parts_mapped}</span></p>
+                        <p><strong>Parts Not Found:</strong> <span class="text-danger">${summary.parts_not_found}</span></p>
+                        <p><strong>Manual Review:</strong> <span class="text-warning">${summary.parts_manual_review}</span></p>
+                        <p><strong>Success Rate:</strong> ${summary.mapping_success_rate.toFixed(1)}%</p>
+                        <p><strong>Requires Review:</strong> 
+                            <span class="badge bg-${summary.requires_manual_review ? 'warning' : 'success'}">
+                                ${summary.requires_manual_review ? 'Yes' : 'No'}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6><i class="fas fa-list"></i> Line Items (${data.line_items.length})</h6>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>External Part #</th>
+                                <th>Internal Part #</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Qty</th>
+                                <th>Line Total</th>
+                                <th>Status</th>
+                                <th>Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    `;
+    
+    let calculatedSubtotal = 0;
+    data.line_items.forEach(item => {
+        const statusBadge = getStatusBadge(item.mapping_status);
+        const confidenceClass = getConfidenceClass(item.mapping_confidence);
+        const lineTotal = item.unit_price * item.quantity;
+        calculatedSubtotal += lineTotal;
+        
+        html += `
+            <tr>
+                <td><code>${item.external_part_number}</code></td>
+                <td><code>${item.internal_part_number || 'N/A'}</code></td>
+                <td>${item.description}</td>
+                <td>$${item.unit_price.toFixed(2)}</td>
+                <td>${item.quantity}</td>
+                <td>$${lineTotal.toFixed(2)}</td>
+                <td>${statusBadge}</td>
+                <td><span class="text-${confidenceClass}">${item.mapping_confidence.toFixed(1)}%</span></td>
+            </tr>
+        `;
+    });
+    
+    // Add totals row
+    const displaySubtotal = company.subtotal > 0 ? company.subtotal : calculatedSubtotal;
+    const displayGrandTotal = company.grand_total > 0 ? company.grand_total : (displaySubtotal + (company.tax_amount || 0));
+    
+    html += `
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <td colspan="5" class="text-end"><strong>Subtotal:</strong></td>
+                                <td><strong>$${displaySubtotal.toFixed(2)}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            ${(company.tax_amount > 0) ? `
+                            <tr>
+                                <td colspan="5" class="text-end"><strong>Tax ${company.tax_rate > 0 ? `(${company.tax_rate}%)` : ''}:</strong></td>
+                                <td><strong>$${company.tax_amount.toFixed(2)}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                            ` : ''}
+                            <tr class="table-primary">
+                                <td colspan="5" class="text-end"><strong>Grand Total:</strong></td>
+                                <td><strong>$${displayGrandTotal.toFixed(2)}</strong></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('previewContent').innerHTML = html;
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'mapped': '<span class="badge bg-success">Mapped</span>',
+        'not_found': '<span class="badge bg-danger">Not Found</span>',
+        'manual_review': '<span class="badge bg-warning">Review</span>'
+    };
+    return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
+}
+
+function getConfidenceClass(confidence) {
+    if (confidence >= 80) return 'success';
+    if (confidence >= 60) return 'warning';
+    return 'danger';
+}
+
+// Handle download from preview
+document.getElementById('downloadFromPreview').addEventListener('click', function() {
+    if (currentPreviewFile) {
+        window.location.href = '/download/' + currentPreviewFile;
+    }
+});
+</script>
+{% endblock %}

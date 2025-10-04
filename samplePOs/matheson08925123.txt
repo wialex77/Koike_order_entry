@@ -1,0 +1,44 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "869",
+        "PONum": "4679158",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-09-25T08:32:43.488799Z",
+        "UseOTS": true,
+        "OTSName": "MATHESON TRI-GAS INC.",
+        "OTSAddress1": "607 NORTHWEST LINCOLN ROAD",
+        "OTSCity": "IDABEL",
+        "OTSState": "OK",
+        "OTSZip": "74745",
+        "PayFlag": "SHIP",
+        "RowMod": "A"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP103D72",
+        "LineDesc": "CUTTING TIP KOIKE #2 103D7-2",
+        "SellingQuantity": "10",
+        "OverridePriceList": true,
+        "DocUnitPrice": "28.05",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "ZTIP103D73",
+        "LineDesc": "CUTTING TIP KOIKE #3 103D7-3",
+        "SellingQuantity": "10",
+        "OverridePriceList": true,
+        "DocUnitPrice": "28.05",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

@@ -1,0 +1,39 @@
+=== IMAGE AI EXTRACTION ===
+```text
+                                       PURCHASE ORDER
+                                                                 JACKSON WELDING & GAS PRODUCTS
+                                                                 4 PIXLEY INDUSTRIAL PKWY
+                                                                 ROCHESTER, NY 14624
+       KOIKE ARONSON                                            PURCHASE ORDER: 79900
+       635 W MAIN ST                                             DATE:        09/19/25
+       PO BOX 307                                                VENDOR NUM:   7323
+       ARCADE NY 14009-0307
+       Ph: 585-492-2400 Fx: 899-999-9999    GORBEL                EMAIL        PAGE:    01
+       20013                                  600 FISHERS RUN
+                                                VICTOR NY 14564
+        VENDOR NUM     FREIGHT TERMS      REQUIRED DATE   PAYMENT TERMS                  OUR P.O. NUMBER MUST APPEAR ON ALL
+                                                                                        PACKING SLIPS, CARTONS AND INVOICES.
+        7323           2000.00 PREPAID    09/23/25                    CUSTOMER  YPREPANO  F.O.B. POINT  BACKORDER
+                                                                                              PREPAID
+                                                                                         No                     Yes
+       SHIP DIRECT TO CUSTOMER                                                                                    JG
+  LINE                                                                                               EXTENDED
+  NUM  QUANTITY UOM SUP     ITEM             ITEM DESCRIPTION                          UNIT       PRICE      DUE
+                                                                                       PRICE                   DATE
+  001     1  EA   KOA PRD3      ** Location:             RO **
+                                 KOIKE ARONSON TURNING ROL3875.723     3,875.72 09/23/25
+                                 DRIVER SYSTEM
+                                 ORDER NO: 0001020848 LINE NO: 001
+  002     1  EA   KOA PRI-3   KOIKE ARONSON TDLER ROLL 811.399       811.40 09/23/25
+                                 ORDER NO: 0001020848 LINE NO: 002
+       FBC - Customers UPS # 118415
+       **PLEASE ACKNOWLEDGE ORDER**
+       VIA EMAIL
+       PURCHASING@JACKSONGASES.COM
+       The delivery window is encouraged to be
+       before the Required Date on Purchase Order
+                                                              TOTAL 4,687.12
+                                 AUTHORIZED SIGNATURE
+```
+
+=== TEXT EXTRACTION ===

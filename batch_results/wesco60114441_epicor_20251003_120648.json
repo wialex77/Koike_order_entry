@@ -1,0 +1,46 @@
+{
+  "ds": {
+    "OrderHed": [
+      {
+        "OpenOrder": true,
+        "CustNum": "401",
+        "PONum": "60114441",
+        "EntryPerson": "Arzana",
+        "ShipViaCode": "INVO",
+        "OrderDate": "2025-10-03T12:06:48.847163Z",
+        "UseOTS": true,
+        "OTSName": "WESCO 02 - Pensacola, FL",
+        "OTSAddress1": "9040 Pensacola Blvd.",
+        "OTSCity": "Pensacola",
+        "OTSState": "FL",
+        "OTSZip": "32534-1929",
+        "PayFlag": "SHIP",
+        "RowMod": "A",
+        "ShippingMethod": "GROUND",
+        "ShippingAccountNumber": "prepaid & add"
+      }
+    ],
+    "OrderDtl": [
+      {
+        "OpenLine": true,
+        "PartNum": "ZA3232060",
+        "LineDesc": "Coupling Set ZOSP-1 Torch to Hose Oxy",
+        "SellingQuantity": "5",
+        "OverridePriceList": true,
+        "DocUnitPrice": "21.45",
+        "RowMod": "A"
+      },
+      {
+        "OpenLine": true,
+        "PartNum": "MISSING",
+        "LineDesc": "Coupling GAS Hose",
+        "SellingQuantity": "4",
+        "OverridePriceList": true,
+        "DocUnitPrice": "21.45",
+        "RowMod": "A"
+      }
+    ]
+  },
+  "continueProcessingOnError": true,
+  "rollbackParentOnChildError": true
+}

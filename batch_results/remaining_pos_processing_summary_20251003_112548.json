@@ -1,0 +1,432 @@
+{
+  "timestamp": "20251003_112548",
+  "total_files": 9,
+  "successful": 6,
+  "failed": 3,
+  "results": [
+    {
+      "success": true,
+      "original_file": "centralmcgowan00664002.pdf",
+      "processed_file": "processed_20251003_111936.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "631",
+              "PONum": "255002",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:22:21.936939Z",
+              "UseOTS": true,
+              "OTSName": "THIELEN MACHINE & WELDING (DEALER)",
+              "OTSAddress1": "522 EAST MEEKER",
+              "OTSCity": "EDEN VALLEY",
+              "OTSState": "MN",
+              "OTSZip": "55329-1113",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "NEXT DAY AIR",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "KJ12250013",
+              "LineDesc": "SV WITH DGN M13X1 02 AND HYLOK 6M",
+              "SellingQuantity": "1",
+              "OverridePriceList": true,
+              "DocUnitPrice": "60.61",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "KJ118251250912",
+              "LineDesc": "PRESSURE REGULATOR 2 PGV-300",
+              "SellingQuantity": "1",
+              "OverridePriceList": true,
+              "DocUnitPrice": "2099.35",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "KJ12LP068651",
+              "LineDesc": "PCB 068651-B PART PCB-1",
+              "SellingQuantity": "1",
+              "OverridePriceList": true,
+              "DocUnitPrice": "734.47",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 3
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": true,
+      "original_file": "indianaoxygen.pdf",
+      "processed_file": "processed_20251003_111936.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "636",
+              "PONum": "728221",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:21:13.111291Z",
+              "UseOTS": true,
+              "OTSName": "INDIANA OXYGEN",
+              "OTSAddress1": "6099 W CORPORATE WAY",
+              "OTSCity": "INDIANAPOLIS",
+              "OTSState": "IN",
+              "OTSZip": "46278",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232260",
+              "LineDesc": "ZA323-2260 TORCH TO HOSE QUICK CONNECTORS SET",
+              "SellingQuantity": "2",
+              "OverridePriceList": true,
+              "DocUnitPrice": "48.00",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": false,
+      "original_file": "lampton00599468.pdf",
+      "error": "Exception during processing: "
+    },
+    {
+      "success": true,
+      "original_file": "linde77673730_OD.pdf",
+      "processed_file": "processed_20251003_112114.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "658",
+              "PONum": "77673730",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:24:33.360490Z",
+              "UseOTS": true,
+              "OTSName": "CAPITAL CONTRACTORS INC",
+              "OTSAddress1": "1001 N 9TH ST",
+              "OTSCity": "LINCOLN",
+              "OTSState": "NE",
+              "OTSZip": "68508",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "MISSING",
+              "LineDesc": "QUICK CONNECT SET FG ZASP-2",
+              "SellingQuantity": "6",
+              "OverridePriceList": true,
+              "DocUnitPrice": "21.45",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "MISSING",
+              "LineDesc": "QUICK CONNECT SET OXY ZASP-1",
+              "SellingQuantity": "6",
+              "OverridePriceList": true,
+              "DocUnitPrice": "21.45",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": false,
+        "parts_valid": [
+          {
+            "errors": [
+              "Part not mapped",
+              "No internal part number assigned"
+            ],
+            "is_valid": false,
+            "line_number": 1
+          },
+          {
+            "errors": [
+              "Part not mapped",
+              "No internal part number assigned"
+            ],
+            "is_valid": false,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": true,
+      "original_file": "mid-state.pdf",
+      "processed_file": "processed_20251003_112226.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "1774",
+              "PONum": "73370-9/19/25",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:24:55.343355Z",
+              "UseOTS": true,
+              "OTSName": "Mid-State Contracting",
+              "OTSAddress1": "2001 County HWY U",
+              "OTSCity": "Wausau",
+              "OTSState": "WI",
+              "OTSZip": "54401",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "586199"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "HYP420261",
+              "LineDesc": "NOZZLE:XPR 170 AMPS",
+              "SellingQuantity": "10",
+              "OverridePriceList": true,
+              "DocUnitPrice": "27.63",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "HYP420258",
+              "LineDesc": "ELECTRODE:XPR 170",
+              "SellingQuantity": "20",
+              "OverridePriceList": true,
+              "DocUnitPrice": "22.53",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": false,
+      "original_file": "redballPO4086595.pdf",
+      "error": "Upload failed: 500 - {\n  \"error\": \"Mapping failed: cannot access local variable 'llm_match' where it is not associated with a value\"\n}\n"
+    },
+    {
+      "success": true,
+      "original_file": "wesco60114441.pdf",
+      "processed_file": "processed_20251003_112434.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "401",
+              "PONum": "60114441",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:25:47.516672Z",
+              "UseOTS": true,
+              "OTSName": "WESCO 02 - Pensacola, FL",
+              "OTSAddress1": "9040 Pensacola Blvd.",
+              "OTSCity": "Pensacola",
+              "OTSState": "FL",
+              "OTSZip": "32534-1929",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZA3232060",
+              "LineDesc": "Coupling Set ZOSP-1 Torch to Hose Oxy",
+              "SellingQuantity": "5",
+              "OverridePriceList": true,
+              "DocUnitPrice": "21.45",
+              "RowMod": "A"
+            },
+            {
+              "OpenLine": true,
+              "PartNum": "MISSING",
+              "LineDesc": "Coupling GAS Hose",
+              "SellingQuantity": "4",
+              "OverridePriceList": true,
+              "DocUnitPrice": "21.45",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": false,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          },
+          {
+            "errors": [
+              "Part not mapped",
+              "No internal part number assigned"
+            ],
+            "is_valid": false,
+            "line_number": 2
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    },
+    {
+      "success": false,
+      "original_file": "westpenn00424236.pdf",
+      "error": "Upload failed: 500 - {\n  \"error\": \"Mapping failed: cannot access local variable 'llm_match' where it is not associated with a value\"\n}\n"
+    },
+    {
+      "success": true,
+      "original_file": "wilson32717.pdf",
+      "processed_file": "processed_20251003_112455.json",
+      "epicor_json": {
+        "ds": {
+          "OrderHed": [
+            {
+              "OpenOrder": true,
+              "CustNum": "735",
+              "PONum": "32717",
+              "EntryPerson": "Arzana",
+              "ShipViaCode": "INVO",
+              "OrderDate": "2025-10-03T11:25:48.719725Z",
+              "UseOTS": true,
+              "OTSName": "WILSON MACHINE & WELDING, INC.",
+              "OTSAddress1": "4787 HIGHWAY 78",
+              "OTSCity": "CORDOVA",
+              "OTSState": "AL",
+              "OTSZip": "35550-4121",
+              "PayFlag": "SHIP",
+              "RowMod": "A",
+              "ShippingMethod": "GROUND",
+              "ShippingAccountNumber": "prepaid & add"
+            }
+          ],
+          "OrderDtl": [
+            {
+              "OpenLine": true,
+              "PartNum": "ZTIP106M73",
+              "LineDesc": "ZT IP106M7 #3",
+              "SellingQuantity": "3",
+              "OverridePriceList": true,
+              "DocUnitPrice": "21.50",
+              "RowMod": "A"
+            }
+          ]
+        },
+        "continueProcessingOnError": true,
+        "rollbackParentOnChildError": true
+      },
+      "validation": {
+        "customer_valid": true,
+        "is_valid": true,
+        "parts_valid": [
+          {
+            "errors": [],
+            "is_valid": true,
+            "line_number": 1
+          }
+        ],
+        "validation_errors": []
+      },
+      "error": null
+    }
+  ]
+}

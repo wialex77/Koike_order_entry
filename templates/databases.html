@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Database Management - PO Processor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-database"></i> Database Management</h2>
+        <p class="text-muted">Manage parts and customers databases for purchase order processing</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-cog"></i> Parts Database</h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addPartModal">
+                    <i class="fas fa-plus"></i> Add Part
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="partsStats" class="mb-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Loading parts...
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Internal Part #</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partsTable">
+                            <!-- Parts will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-building"></i> Customers Database</h5>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addCustomerModal">
+                    <i class="fas fa-plus"></i> Add Customer
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="customersStats" class="mb-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    Loading customers...
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Account Number</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customersTable">
+                            <!-- Customers will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Part Modal -->
+<div class="modal fade" id="addPartModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Part</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addPartForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="partNumber" class="form-label">Internal Part Number</label>
+                        <input type="text" class="form-control" id="partNumber" name="internal_part_number" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="partDescription" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="partDescription" name="description" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Add Part
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Customer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addCustomerForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="companyName" class="form-label">Company Name</label>
+                        <input type="text" class="form-control" id="companyName" name="company_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="accountNumber" class="form-label">Account Number (Epicor)</label>
+                        <input type="text" class="form-control" id="accountNumber" name="account_number" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Add Customer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load database data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadDatabaseStats();
+    loadParts();
+    loadCustomers();
+});
+
+async function loadDatabaseStats() {
+    try {
+        const response = await fetch('/api/databases/stats');
+        const stats = await response.json();
+        
+        document.getElementById('partsStats').innerHTML = `
+            <strong>Total Parts:</strong> ${stats.parts_count} | 
+            <strong>Database:</strong> ${stats.parts_db_exists ? 'Found' : 'Missing'}
+        `;
+        
+        document.getElementById('customersStats').innerHTML = `
+            <strong>Total Customers:</strong> ${stats.customers_count} | 
+            <strong>Database:</strong> ${stats.customers_db_exists ? 'Found' : 'Missing'}
+        `;
+    } catch (error) {
+        console.error('Error loading database stats:', error);
+    }
+}
+
+async function loadParts() {
+    try {
+        const response = await fetch('/api/databases/parts');
+        const data = await response.json();
+        
+        const tbody = document.getElementById('partsTable');
+        tbody.innerHTML = '';
+        
+        if (data.parts && data.parts.length > 0) {
+            data.parts.forEach(part => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td><code>${part.internal_part_number}</code></td>
+                    <td>${part.description}</td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No parts found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading parts:', error);
+        document.getElementById('partsTable').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error loading parts</td></tr>';
+    }
+}
+
+async function loadCustomers() {
+    try {
+        const response = await fetch('/api/databases/customers');
+        const data = await response.json();
+        
+        const tbody = document.getElementById('customersTable');
+        tbody.innerHTML = '';
+        
+        if (data.customers && data.customers.length > 0) {
+            data.customers.forEach(customer => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${customer.company_name}</td>
+                    <td><code>${customer.account_number}</code></td>
+                `;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted">No customers found</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading customers:', error);
+        document.getElementById('customersTable').innerHTML = '<tr><td colspan="2" class="text-center text-danger">Error loading customers</td></tr>';
+    }
+}
+
+// Handle add part form
+document.getElementById('addPartForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        internal_part_number: formData.get('internal_part_number'),
+        description: formData.get('description')
+    };
+    
+    try {
+        const response = await fetch('/api/databases/parts', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and reload data
+            bootstrap.Modal.getInstance(document.getElementById('addPartModal')).hide();
+            this.reset();
+            loadDatabaseStats();
+            loadParts();
+            
+            // Show success message
+            showAlert('Part added successfully!', 'success');
+        } else {
+            showAlert(result.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error adding part: ' + error.message, 'danger');
+    }
+});
+
+// Handle add customer form
+document.getElementById('addCustomerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = {
+        company_name: formData.get('company_name'),
+        account_number: formData.get('account_number')
+    };
+    
+    try {
+        const response = await fetch('/api/databases/customers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Close modal and reload data
+            bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+            this.reset();
+            loadDatabaseStats();
+            loadCustomers();
+            
+            // Show success message
+            showAlert('Customer added successfully!', 'success');
+        } else {
+            showAlert(result.error, 'danger');
+        }
+    } catch (error) {
+        showAlert('Error adding customer: ' + error.message, 'danger');
+    }
+});
+
+function showAlert(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Insert at the top of the container
+    const container = document.querySelector('.container');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,8 @@
+{
+  "tenant_id": "27d88747-62fe-4596-8e98-aa7036b05259",
+  "client_id": "a92ff10d-c813-4cd3-a5de-bd66ceef1e87",
+  "client_secret": "X3J8Q~1FPxd6pFVYYVCJgyfd.kIL6-BkpF_cubIs",
+  "user_email": "arzana.test@outlook.com",
+  "flask_server_url": "http://127.0.0.1:5000",
+  "check_interval_seconds": 30
+}

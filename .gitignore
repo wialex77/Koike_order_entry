@@ -1,0 +1,101 @@
+# Environment and Configuration Files
+# These contain sensitive data like passwords, API keys, and database credentials
+.env
+*.env
+config.env
+config.json
+
+# Database Files
+# These contain actual data that should not be in version control
+*.db
+*.sqlite
+*.sqlite3
+data/metrics.db
+
+# SSL Certificates and Keys
+# These are cryptographic files that provide security
+*.pem
+*.key
+*.crt
+*.p12
+cert.pem
+key.pem
+flask_cert.pem
+flask_key.pem
+
+# Log Files
+# These may contain sensitive information from your application
+*.log
+logs/
+monitor.log
+
+# Python Cache and Temporary Files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Node.js Dependencies
+# These are downloaded packages, not your code
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and Editor Files
+# Personal settings that shouldn't be shared
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Windows Specific
+# Temporary files created by Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Excel Temporary Files
+# These are created when Excel files are open
+~$*.xlsx
+~$*.xls
+
+# Cache Files
+# Temporary data that can be regenerated
+cache/
+*.cache
+data/cache/
+
+# Upload Directories
+# User uploaded files that shouldn't be in version control
+uploads/
+processed/
+
+# Backup Files
+*.backup
+*.bak
+flask_cert.pem.backup
+
+# Output and Results
+# Generated files that can be recreated
+batch_results/
+correct/
+test_output.txt
