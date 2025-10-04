@@ -291,6 +291,60 @@ class MetricsDatabase:
         except Exception as e:
             print(f"❌ Error getting processing results: {e}")
             return []
+
+    def get_all_processing_results(self, limit: int = 100, offset: int = 0) -> List[ProcessingResult]:
+        """Get all processing results with pagination."""
+        try:
+            sql = '''
+                SELECT * FROM processing_results 
+                ORDER BY created_at DESC 
+                LIMIT :limit OFFSET :offset
+            '''
+            
+            rows = self.db_config.execute_raw_sql(sql, {'limit': limit, 'offset': offset})
+            
+            results = []
+            for row in rows:
+                # Convert row to ProcessingResult object
+                error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+                
+                result = ProcessingResult(
+                    id=row[0],
+                    filename=row[1],
+                    original_filename=row[2],
+                    file_size=row[3],
+                    processing_status=ProcessingStatus(row[4]),
+                    validation_status=ValidationStatus(row[5]),
+                    processing_start_time=row[6],
+                    processing_end_time=row[7],
+                    processing_duration=row[8],
+                    total_parts=row[9] or 0,
+                    parts_mapped=row[10] or 0,
+                    parts_not_found=row[11] or 0,
+                    parts_manual_review=row[12] or 0,
+                    mapping_success_rate=row[13] or 0.0,
+                    customer_matched=row[14] or False,
+                    customer_match_confidence=row[15] or 0.0,
+                    error_types=error_types,
+                    error_details=row[16] or '',
+                    manual_corrections_made=row[18] or 0,
+                    epicor_ready=row[19] or False,
+                    epicor_ready_with_one_click=row[20] or False,
+                    missing_info_count=row[21] or 0,
+                    processed_file_path=row[22] or '',
+                    epicor_json_path=row[23],
+                    raw_json_data=row[24] or '',
+                    notes=row[25] or '',
+                    created_at=row[26],
+                    updated_at=row[27]
+                )
+                results.append(result)
+            
+            return results
+            
+        except Exception as e:
+            print(f"❌ Error getting all processing results: {e}")
+            return []
     
     def get_processing_result_by_filename(self, filename: str) -> Optional[ProcessingResult]:
         """Get a processing result by filename."""
