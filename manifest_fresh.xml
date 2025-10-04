@@ -6,11 +6,11 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Arzana Order Processor"/>
   <Description DefaultValue="Automatically processes purchase orders from email attachments with AI-powered document analysis and part number mapping. Tags emails based on processing results."/>
-  <IconUrl DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-64.png"/>
-  <HighResolutionIconUrl DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-128.png"/>
+  <IconUrl DefaultValue="https://www.contoso.com/assets/icon-64.png"/>
+  <HighResolutionIconUrl DefaultValue="https://www.contoso.com/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://www.arzana.ai/help"/>
   <AppDomains>
-    <AppDomain>https://bx3w2xz6f6.us-east-1.awsapprunner.com</AppDomain>
+    <AppDomain>https://localhost:5000</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Mailbox"/>
@@ -23,7 +23,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://d3vsweb1mn883.cloudfront.net/taskpane.html"/>
+        <SourceLocation DefaultValue="https://www.contoso.com/taskpane.html"/>
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -78,13 +78,13 @@
     </Hosts>
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-16.png"/>
-        <bt:Image id="Icon.32x32" DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-32.png"/>
-        <bt:Image id="Icon.80x80" DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-80.png"/>
+        <bt:Image id="Icon.16x16" DefaultValue="https://www.contoso.com/assets/icon-16.png"/>
+        <bt:Image id="Icon.32x32" DefaultValue="https://www.contoso.com/assets/icon-32.png"/>
+        <bt:Image id="Icon.80x80" DefaultValue="https://www.contoso.com/assets/icon-80.png"/>
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://d3vsweb1mn883.cloudfront.net/commands.html"/>
-        <bt:Url id="Taskpane.Url" DefaultValue="https://d3vsweb1mn883.cloudfront.net/taskpane.html"/>
+        <bt:Url id="Commands.Url" DefaultValue="https://www.contoso.com/commands.html"/>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://www.contoso.com/taskpane.html"/>
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Arzana"/>

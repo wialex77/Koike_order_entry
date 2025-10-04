@@ -10,7 +10,7 @@
   <HighResolutionIconUrl DefaultValue="https://d3vsweb1mn883.cloudfront.net/assets/icon-128.png"/>
   <SupportUrl DefaultValue="https://www.arzana.ai/help"/>
   <AppDomains>
-    <AppDomain>https://bx3w2xz6f6.us-east-1.awsapprunner.com</AppDomain>
+    <AppDomain>https://localhost:5000</AppDomain>
   </AppDomains>
   <Hosts>
     <Host Name="Mailbox"/>

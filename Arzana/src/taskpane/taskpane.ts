@@ -871,7 +871,7 @@ function convertFormToEpicor(): any {
 // Look up customer name by account number
 async function lookupCustomerName(accountNumber: string): Promise<string> {
   try {
-    const response = await fetch(`http://localhost:5000/api/get_customer_by_account?account_number=${encodeURIComponent(accountNumber)}`);
+    const response = await fetch(`https://bx3w2xz6f6.us-east-1.awsapprunner.com/api/get_customer_by_account?account_number=${encodeURIComponent(accountNumber)}`);
     const result = await response.json();
     
     if (result.success && result.customer) {
