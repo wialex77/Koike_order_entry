@@ -20,7 +20,8 @@ from step1_upload import FileUploadHandler
 from step2_ocr_ai import DocumentProcessor
 from step3_databases import DatabaseManager
 from step4_mapping import PartNumberMapper
-from step5_metrics_db import MetricsDatabase, ProcessingStatus, ValidationStatus, ErrorType
+from step5_metrics_db_postgres import MetricsDatabase, ProcessingStatus, ValidationStatus, ErrorType
+from database_config import db_config
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'  # Change this in production
