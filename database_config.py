@@ -5,6 +5,8 @@ Handles both SQLite (development) and PostgreSQL (production) databases.
 
 import os
 import sqlite3
+import json
+import boto3
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -33,7 +35,9 @@ class DatabaseConfig:
         db_port = os.environ.get('DB_PORT', '5432')
         db_name = os.environ.get('DB_NAME', 'arzana_db')
         db_user = os.environ.get('DB_USER', 'arzana_admin')
-        db_password = os.environ.get('DB_PASSWORD', 'Arzana2025!')
+        
+        # Get password from Secrets Manager if available
+        db_password = self._get_db_password()
         
         # Create connection string
         connection_string = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
@@ -47,6 +51,25 @@ class DatabaseConfig:
             print(f"❌ Failed to connect to PostgreSQL: {e}")
             print("Falling back to SQLite for development...")
             self._setup_sqlite()
+    
+    def _get_db_password(self):
+        """Get database password from Secrets Manager or environment variable."""
+        try:
+            # Check if we have a secret ARN
+            secret_arn = os.environ.get('DB_SECRET_ARN')
+            if secret_arn:
+                # Get password from Secrets Manager
+                client = boto3.client('secretsmanager', region_name='us-east-1')
+                response = client.get_secret_value(SecretId=secret_arn)
+                secret_data = json.loads(response['SecretString'])
+                return secret_data['password']
+            else:
+                # Fall back to environment variable
+                return os.environ.get('DB_PASSWORD', 'Arzana2025!')
+        except Exception as e:
+            print(f"⚠️ Could not get password from Secrets Manager: {e}")
+            # Fall back to environment variable
+            return os.environ.get('DB_PASSWORD', 'Arzana2025!')
     
     def _setup_sqlite(self):
         """Setup SQLite connection for development."""
