@@ -262,7 +262,7 @@ async function loadReviewUI(categories: any[]) {
 
     // Try to get processed data from Flask server
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/get_processed_email?email_id=${encodeURIComponent(emailId)}&subject=${encodeURIComponent(subject)}&attachment_name=${encodeURIComponent(attachmentName)}`, {
+      const response = await fetch(`https://bx3w2xz6f6.us-east-1.awsapprunner.com/api/get_processed_email?email_id=${encodeURIComponent(emailId)}&subject=${encodeURIComponent(subject)}&attachment_name=${encodeURIComponent(attachmentName)}`, {
         method: 'GET',
       headers: {
           'Content-Type': 'application/json',
@@ -336,7 +336,7 @@ async function loadApprovedEmailData(categories: any[]) {
       
     // Try to get processed data from Flask server
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/get_processed_email?email_id=${encodeURIComponent(emailId)}&subject=${encodeURIComponent(subject)}&attachment_name=${encodeURIComponent(attachmentName)}`, {
+      const response = await fetch(`https://bx3w2xz6f6.us-east-1.awsapprunner.com/api/get_processed_email?email_id=${encodeURIComponent(emailId)}&subject=${encodeURIComponent(subject)}&attachment_name=${encodeURIComponent(attachmentName)}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -781,7 +781,7 @@ async function saveUpdatedDataToServer(updatedData: any) {
     const subject = Office.context.mailbox.item.subject;
     const attachmentName = currentFileId ? `attachment_${currentFileId}` : 'unknown';
     
-    const response = await fetch('http://127.0.0.1:5000/api/save_updated_data', {
+    const response = await fetch('https://bx3w2xz6f6.us-east-1.awsapprunner.com/api/save_updated_data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
