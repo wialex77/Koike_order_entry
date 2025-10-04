@@ -435,3 +435,178 @@ class MetricsDatabase:
                 'success_rate': 0,
                 'avg_processing_time': 0
             }
+
+    def create_processing_result(self, filename: str, original_filename: str, file_size: int, 
+                                processing_status: ProcessingStatus, validation_status: ValidationStatus,
+                                processing_start_time: datetime, processed_file_path: str, 
+                                raw_json_data: str, notes: str = "") -> int:
+        """Create a new processing result."""
+        try:
+            sql = '''
+                INSERT INTO processing_results (
+                    filename, original_filename, file_size, processing_status, validation_status,
+                    processing_start_time, processed_file_path, raw_json_data, notes, created_at, updated_at
+                ) VALUES (:filename, :original_filename, :file_size, :processing_status, :validation_status,
+                         :processing_start_time, :processed_file_path, :raw_json_data, :notes, :created_at, :updated_at)
+                RETURNING id
+            '''
+            
+            now = datetime.utcnow()
+            result = self.db_config.execute_raw_sql_single(sql, {
+                'filename': filename,
+                'original_filename': original_filename,
+                'file_size': file_size,
+                'processing_status': processing_status.value,
+                'validation_status': validation_status.value,
+                'processing_start_time': processing_start_time,
+                'processed_file_path': processed_file_path,
+                'raw_json_data': raw_json_data,
+                'notes': notes,
+                'created_at': now,
+                'updated_at': now
+            })
+            
+            return result[0] if result else 0
+            
+        except Exception as e:
+            print(f"❌ Error creating processing result: {e}")
+            return 0
+
+    def update_processing_result(self, result_id: int, **kwargs) -> bool:
+        """Update a processing result."""
+        try:
+            if not kwargs:
+                return True
+                
+            set_clauses = []
+            values = []
+            
+            for key, value in kwargs.items():
+                if key == 'error_types' and isinstance(value, list):
+                    value = json.dumps([e.value if hasattr(e, 'value') else e for e in value])
+                elif hasattr(value, 'value'):  # Enum
+                    value = value.value
+                elif isinstance(value, datetime):
+                    value = value.isoformat()
+                    
+                set_clauses.append(f"{key} = :{key}")
+                values.append(value)
+            
+            if not set_clauses:
+                return True
+                
+            set_clauses.append("updated_at = :updated_at")
+            values.append(datetime.utcnow())
+            values.append(result_id)
+            
+            sql = f'''
+                UPDATE processing_results 
+                SET {', '.join(set_clauses)}
+                WHERE id = :id
+            '''
+            
+            params = {f'param_{i}': val for i, val in enumerate(values[:-1])}
+            params['id'] = values[-1]
+            params['updated_at'] = datetime.utcnow()
+            
+            self.db_config.execute_raw_sql(sql, params)
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error updating processing result: {e}")
+            return False
+
+    def get_processing_result(self, result_id: int) -> Optional[ProcessingResult]:
+        """Get a processing result by ID."""
+        try:
+            sql = "SELECT * FROM processing_results WHERE id = :id"
+            row = self.db_config.execute_raw_sql_single(sql, {'id': result_id})
+            
+            if row:
+                error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+                
+                return ProcessingResult(
+                    id=row[0],
+                    filename=row[1],
+                    original_filename=row[2],
+                    file_size=row[3],
+                    processing_status=ProcessingStatus(row[4]),
+                    validation_status=ValidationStatus(row[5]),
+                    processing_start_time=row[6],
+                    processing_end_time=row[7],
+                    processing_duration=row[8],
+                    total_parts=row[9] or 0,
+                    parts_mapped=row[10] or 0,
+                    parts_not_found=row[11] or 0,
+                    parts_manual_review=row[12] or 0,
+                    mapping_success_rate=row[13] or 0.0,
+                    customer_matched=row[14] or False,
+                    customer_match_confidence=row[15] or 0.0,
+                    error_types=error_types,
+                    error_details=row[16] or '',
+                    manual_corrections_made=row[18] or 0,
+                    epicor_ready=row[19] or False,
+                    epicor_ready_with_one_click=row[20] or False,
+                    missing_info_count=row[21] or 0,
+                    processed_file_path=row[22] or '',
+                    epicor_json_path=row[23],
+                    raw_json_data=row[24] or '',
+                    notes=row[25] or '',
+                    created_at=row[26],
+                    updated_at=row[27]
+                )
+            return None
+            
+        except Exception as e:
+            print(f"❌ Error getting processing result: {e}")
+            return None
+
+    def delete_processing_result(self, result_id: int) -> bool:
+        """Delete a processing result."""
+        try:
+            sql = "DELETE FROM processing_results WHERE id = :id"
+            self.db_config.execute_raw_sql(sql, {'id': result_id})
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error deleting processing result: {e}")
+            return False
+
+    def mark_as_correct(self, result_id: int) -> bool:
+        """Mark a processing result as correct."""
+        return self.update_processing_result(result_id, validation_status=ValidationStatus.CORRECT)
+
+    def mark_as_contains_error(self, result_id: int, error_types: List[ErrorType], error_details: str = "") -> bool:
+        """Mark a processing result as containing errors."""
+        return self.update_processing_result(
+            result_id, 
+            validation_status=ValidationStatus.CONTAINS_ERROR,
+            error_types=error_types,
+            error_details=error_details
+        )
+
+    def update_raw_json_data(self, file_id: int, raw_json_data: str) -> bool:
+        """Update raw JSON data for a file."""
+        return self.update_processing_result(file_id, raw_json_data=raw_json_data)
+
+    def update_validation_status(self, file_id: int, validation_status: str) -> bool:
+        """Update validation status for a file."""
+        return self.update_processing_result(file_id, validation_status=validation_status)
+
+    def add_error_type(self, file_id: int, error_type: ErrorType) -> bool:
+        """Add an error type to a file."""
+        try:
+            # Get current error types
+            result = self.get_processing_result(file_id)
+            if not result:
+                return False
+                
+            current_errors = result.error_types
+            if error_type not in current_errors:
+                current_errors.append(error_type)
+                
+            return self.update_processing_result(file_id, error_types=current_errors)
+            
+        except Exception as e:
+            print(f"❌ Error adding error type: {e}")
+            return False
