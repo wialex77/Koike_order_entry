@@ -526,9 +526,12 @@ class MetricsDatabase:
         """Get a processing result by ID."""
         try:
             sql = "SELECT * FROM processing_results WHERE id = :id"
+            print(f"🔍 get_processing_result: Looking for ID {result_id}")
             row = self.db_config.execute_raw_sql_single(sql, {'id': result_id})
+            print(f"🔍 get_processing_result: Query result = {row}")
             
             if row:
+                print(f"✅ Found processing result with ID {result_id}, creating object...")
                 error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
                 
                 return ProcessingResult(
@@ -561,7 +564,9 @@ class MetricsDatabase:
                     created_at=row[26],
                     updated_at=row[27]
                 )
-            return None
+            else:
+                print(f"❌ No processing result found with ID {result_id}")
+                return None
             
         except Exception as e:
             print(f"❌ Error getting processing result: {e}")
