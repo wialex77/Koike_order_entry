@@ -442,6 +442,11 @@ class MetricsDatabase:
                                 raw_json_data: str, notes: str = "") -> int:
         """Create a new processing result."""
         try:
+            # Check if we're connected to a working database
+            if not self.db_config.engine:
+                print("❌ No database engine available")
+                return 0
+                
             sql = '''
                 INSERT INTO processing_results (
                     filename, original_filename, file_size, processing_status, validation_status,
@@ -467,15 +472,17 @@ class MetricsDatabase:
             })
             
             print(f"🔍 create_processing_result: result = {result}")
-            if result:
+            if result and len(result) > 0:
                 print(f"✅ Created processing result with ID: {result[0]}")
                 return result[0]
             else:
-                print(f"❌ Failed to create processing result - result is None")
+                print(f"❌ Failed to create processing result - result is None or empty")
                 return 0
             
         except Exception as e:
             print(f"❌ Error creating processing result: {e}")
+            import traceback
+            traceback.print_exc()
             return 0
 
     def update_processing_result(self, result_id: int, **kwargs) -> bool:

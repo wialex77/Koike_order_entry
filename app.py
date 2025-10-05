@@ -268,6 +268,7 @@ def upload_file():
             raw_json_data='{}'  # Will be updated after processing
         )
         
+        
         # Step 2: Process document with OCR/AI
         current_progress = {'percentage': 40, 'status': 'Finding account number and address...'}
         print(f"🔍 Starting document processing for {file.filename}")
@@ -349,6 +350,7 @@ def upload_file():
         
         # Update processing result with metrics and raw JSON data
         processing_end_time = datetime.now()
+        
         # Get the processing result object to access processing_start_time
         processing_result_obj = metrics_db.get_processing_result(processing_result_id)
         if not processing_result_obj:
