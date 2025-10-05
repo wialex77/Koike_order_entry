@@ -159,6 +159,44 @@ def progress():
     
     return Response(generate(), mimetype='text/event-stream')
 
+@app.route('/upload-test', methods=['POST'])
+def upload_file_test():
+    """Test endpoint to isolate 500 error source."""
+    try:
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Test 1: Save file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Test 2: Initialize document processor
+        try:
+            processor = DocumentProcessor()
+            return jsonify({
+                'success': True,
+                'message': 'File saved and processor initialized',
+                'filename': filename,
+                'size': os.path.getsize(file_path),
+                'processor_init': 'OK'
+            })
+        except Exception as proc_error:
+            return jsonify({
+                'success': False,
+                'message': f'Processor initialization failed: {str(proc_error)}',
+                'filename': filename,
+                'size': os.path.getsize(file_path)
+            }), 500
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/upload-simple', methods=['POST'])
 def upload_file_simple():
     """Simple file upload test without OCR/AI processing."""

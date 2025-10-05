@@ -253,7 +253,7 @@ function Invoke-FlaskProcessing {
             "Content-Type" = "multipart/form-data; boundary=$boundary"
         }
         
-        $response = Invoke-RestMethod -Uri "$FlaskServerUrl/upload-simple" -Method Post -Body $bodyBytes -Headers $headers -TimeoutSec 300
+        $response = Invoke-RestMethod -Uri "$FlaskServerUrl/upload-test" -Method Post -Body $bodyBytes -Headers $headers -TimeoutSec 300
         
         Write-Log "Flask server response received"
         return $response
