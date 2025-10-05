@@ -265,8 +265,10 @@ def upload_file():
         
         # Step 2: Process document with OCR/AI
         current_progress = {'percentage': 40, 'status': 'Finding account number and address...'}
+        print(f"🔍 Starting document processing for {file.filename}")
         try:
             po_data = document_processor.process_document(file_path)
+            print(f"✅ Document processing completed for {file.filename}")
         except Exception as e:
             # Update processing result with error
             if processing_result_id:
@@ -281,11 +283,13 @@ def upload_file():
         
         # Step 3 & 4: Map part numbers and lookup account
         current_progress = {'percentage': 70, 'status': 'Mapping part numbers...'}
+        print(f"🔍 Starting part mapping for {file.filename}")
         try:
             mapped_data = part_mapper.process_purchase_order(po_data)
+            print(f"✅ Part mapping completed for {file.filename}")
         except Exception as e:
             # Update processing result with error
-            if processing_result:
+            if processing_result_id:
                 metrics_db.update_processing_result(
                     processing_result_id,
                     processing_status=ProcessingStatus.ERROR,
@@ -297,14 +301,20 @@ def upload_file():
         
         # Save processed data
         current_progress = {'percentage': 90, 'status': 'Finalizing results...'}
+        print(f"🔍 Saving mapped data for {file.filename}")
         
         part_mapper.save_mapped_data(mapped_data, processed_path)
+        print(f"✅ Mapped data saved for {file.filename}")
         
         # Generate manual review report
+        print(f"🔍 Generating review report for {file.filename}")
         review_report = part_mapper.generate_manual_review_report(mapped_data)
+        print(f"✅ Review report generated for {file.filename}")
         
         # Get validation results
+        print(f"🔍 Validating for Epicor export for {file.filename}")
         validation = part_mapper.validate_for_epicor_export(mapped_data)
+        print(f"✅ Validation completed for {file.filename}")
         
         # Calculate metrics
         summary = mapped_data.processing_summary
@@ -355,6 +365,7 @@ def upload_file():
                 # If that also fails, fall back to internal format
                 raw_json_data = json.dumps(part_mapper.export_to_json(mapped_data), indent=2)
         
+        print(f"🔍 Updating processing result in database for {file.filename}")
         metrics_db.update_processing_result(
             processing_result_id,
             processing_status=ProcessingStatus.COMPLETED,
