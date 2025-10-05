@@ -159,6 +159,33 @@ def progress():
     
     return Response(generate(), mimetype='text/event-stream')
 
+@app.route('/upload-simple', methods=['POST'])
+def upload_file_simple():
+    """Simple file upload test without OCR/AI processing."""
+    try:
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        # Just save the file and return success
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        return jsonify({
+            'success': True,
+            'message': 'File uploaded successfully',
+            'filename': filename,
+            'size': os.path.getsize(file_path)
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     """Handle file upload and processing."""

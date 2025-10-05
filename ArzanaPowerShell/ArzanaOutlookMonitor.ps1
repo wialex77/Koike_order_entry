@@ -2,7 +2,7 @@
 # Automatically monitors Outlook for PO emails and processes them
 
 param(
-    [string]$FlaskServerUrl = "http://127.0.0.1:5000",
+    [string]$FlaskServerUrl = "https://bx3w2xz6f6.us-east-1.awsapprunner.com",
     [int]$CheckIntervalSeconds = 30,
     [string]$LogPath = "C:\Users\willt\Downloads\Koike\ArzanaPowerShell\logs\",
     [switch]$RunAsService = $false
@@ -40,7 +40,19 @@ function Initialize-Outlook {
             return $true
         }
         catch {
-            Write-Log "No existing Outlook instance found, will try to create new one..." "WARN"
+            Write-Log "No existing Outlook instance found. Please make sure Outlook is running!" "ERROR"
+            Write-Log "Opening Outlook and waiting 10 seconds..." "INFO"
+            Start-Process "outlook.exe"
+            Start-Sleep -Seconds 10
+            try {
+                $global:OutlookApp = [System.Runtime.InteropServices.Marshal]::GetActiveObject("Outlook.Application")
+                Write-Log "Connected to Outlook after opening it"
+                return $true
+            }
+            catch {
+                Write-Log "Still cannot connect to Outlook. Please make sure Outlook is running and try again." "ERROR"
+                return $false
+            }
         }
         
         # Try different Outlook versions
@@ -220,25 +232,28 @@ function Invoke-FlaskProcessing {
     try {
         Write-Log "Sending $FileName to Flask server..."
         
-        $fileBytes = [System.IO.File]::ReadAllBytes($FilePath)
+        # Create proper multipart form data
         $boundary = [System.Guid]::NewGuid().ToString()
+        $LF = "`r`n"
         
-        $bodyLines = @()
-        $bodyLines += "--$boundary"
-        $bodyLines += "Content-Disposition: form-data; name=`"file`"; filename=`"$FileName`""
-        $bodyLines += "Content-Type: application/octet-stream"
-        $bodyLines += ""
-        $bodyLines += [System.Text.Encoding]::GetEncoding("iso-8859-1").GetString($fileBytes)
-        $bodyLines += "--$boundary--"
+        $fileBytes = [System.IO.File]::ReadAllBytes($FilePath)
+        $fileContent = [System.Text.Encoding]::GetEncoding("iso-8859-1").GetString($fileBytes)
         
-        $body = $bodyLines -join "`r`n"
+        $body = (
+            "--$boundary$LF" +
+            "Content-Disposition: form-data; name=`"file`"; filename=`"$FileName`"$LF" +
+            "Content-Type: application/octet-stream$LF$LF" +
+            "$fileContent$LF" +
+            "--$boundary--$LF"
+        )
+        
         $bodyBytes = [System.Text.Encoding]::GetEncoding("iso-8859-1").GetBytes($body)
         
         $headers = @{
             "Content-Type" = "multipart/form-data; boundary=$boundary"
         }
         
-        $response = Invoke-RestMethod -Uri "$FlaskServerUrl/upload" -Method Post -Body $bodyBytes -Headers $headers -TimeoutSec 300
+        $response = Invoke-RestMethod -Uri "$FlaskServerUrl/upload-simple" -Method Post -Body $bodyBytes -Headers $headers -TimeoutSec 300
         
         Write-Log "Flask server response received"
         return $response
