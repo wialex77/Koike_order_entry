@@ -150,6 +150,11 @@ def index():
     """Main page with file upload form."""
     return render_template('index.html')
 
+@app.route('/health-check', methods=['GET'])
+def health_check():
+    """Simple health check endpoint to verify Flask app is running."""
+    return jsonify({'status': 'ok', 'message': 'Flask app is running'})
+
 @app.route('/progress')
 def progress():
     """Server-Sent Events endpoint for real-time progress updates."""
