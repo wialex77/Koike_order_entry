@@ -6,7 +6,6 @@ Handles both SQLite (development) and PostgreSQL (production) databases.
 import os
 import sqlite3
 import json
-import boto3
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
@@ -29,15 +28,13 @@ class DatabaseConfig:
             self._setup_sqlite()
     
     def _setup_postgresql(self):
-        """Setup PostgreSQL connection for production."""
+        """Setup PostgreSQL connection for production (Supabase)."""
         # Get database connection details from environment variables
-        db_host = os.environ.get('DB_HOST', 'arzana-db.c8xmsq8gsx4s.us-east-1.rds.amazonaws.com')
+        db_host = os.environ.get('DB_HOST', 'db.xxxxxxxxxxxx.supabase.co')
         db_port = os.environ.get('DB_PORT', '5432')
-        db_name = os.environ.get('DB_NAME', 'arzana_db')
-        db_user = os.environ.get('DB_USER', 'arzana_admin')
-        
-        # Get password from Secrets Manager if available
-        db_password = self._get_db_password()
+        db_name = os.environ.get('DB_NAME', 'postgres')
+        db_user = os.environ.get('DB_USER', 'postgres')
+        db_password = os.environ.get('DB_PASSWORD', 'your_password_here')
         
         # Create connection string
         connection_string = f"postgresql://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_name}"
@@ -46,30 +43,15 @@ class DatabaseConfig:
             self.engine = create_engine(connection_string, echo=False)
             self.session_factory = sessionmaker(bind=self.engine)
             self.is_postgres = True
-            print(f"✅ Connected to PostgreSQL database: {db_host}")
+            print(f"✅ Connected to Supabase PostgreSQL database: {db_host}")
         except Exception as e:
-            print(f"❌ Failed to connect to PostgreSQL: {e}")
+            print(f"❌ Failed to connect to Supabase PostgreSQL: {e}")
             print("Falling back to SQLite for development...")
             self._setup_sqlite()
     
     def _get_db_password(self):
-        """Get database password from Secrets Manager or environment variable."""
-        try:
-            # Check if we have a secret ARN
-            secret_arn = os.environ.get('DB_SECRET_ARN')
-            if secret_arn:
-                # Get password from Secrets Manager
-                client = boto3.client('secretsmanager', region_name='us-east-1')
-                response = client.get_secret_value(SecretId=secret_arn)
-                secret_data = json.loads(response['SecretString'])
-                return secret_data['password']
-            else:
-                # Fall back to environment variable
-                return os.environ.get('DB_PASSWORD', 'Arzana2025!')
-        except Exception as e:
-            print(f"⚠️ Could not get password from Secrets Manager: {e}")
-            # Fall back to environment variable
-            return os.environ.get('DB_PASSWORD', 'Arzana2025!')
+        """Get database password from environment variable."""
+        return os.environ.get('DB_PASSWORD', 'your_password_here')
     
     def _setup_sqlite(self):
         """Setup SQLite connection for development."""
