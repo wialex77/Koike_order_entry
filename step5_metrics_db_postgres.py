@@ -466,7 +466,13 @@ class MetricsDatabase:
                 'updated_at': now
             })
             
-            return result[0] if result else 0
+            print(f"🔍 create_processing_result: result = {result}")
+            if result:
+                print(f"✅ Created processing result with ID: {result[0]}")
+                return result[0]
+            else:
+                print(f"❌ Failed to create processing result - result is None")
+                return 0
             
         except Exception as e:
             print(f"❌ Error creating processing result: {e}")

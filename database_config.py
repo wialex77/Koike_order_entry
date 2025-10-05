@@ -93,12 +93,12 @@ class DatabaseConfig:
             else:
                 result = conn.execute(sql, params or {})
             
-            # Check if this is a SELECT query that returns rows
+            # Check if this is a SELECT query or has RETURNING clause
             sql_upper = sql.strip().upper()
-            if sql_upper.startswith('SELECT'):
+            if sql_upper.startswith('SELECT') or 'RETURNING' in sql_upper:
                 return result.fetchone()
             else:
-                # For non-SELECT queries, commit and return None
+                # For non-SELECT queries without RETURNING, commit and return None
                 conn.commit()
                 return None
     
