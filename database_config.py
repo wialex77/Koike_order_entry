@@ -75,7 +75,15 @@ class DatabaseConfig:
                 result = conn.execute(text(sql), params or {})
             else:
                 result = conn.execute(sql, params or {})
-            return result.fetchall()
+            
+            # Check if this is a SELECT query that returns rows
+            sql_upper = sql.strip().upper()
+            if sql_upper.startswith('SELECT'):
+                return result.fetchall()
+            else:
+                # For non-SELECT queries (CREATE, INSERT, UPDATE, DELETE), commit and return empty list
+                conn.commit()
+                return []
     
     def execute_raw_sql_single(self, sql, params=None):
         """Execute raw SQL query and return single result."""
@@ -84,7 +92,15 @@ class DatabaseConfig:
                 result = conn.execute(text(sql), params or {})
             else:
                 result = conn.execute(sql, params or {})
-            return result.fetchone()
+            
+            # Check if this is a SELECT query that returns rows
+            sql_upper = sql.strip().upper()
+            if sql_upper.startswith('SELECT'):
+                return result.fetchone()
+            else:
+                # For non-SELECT queries, commit and return None
+                conn.commit()
+                return None
     
     def get_connection(self):
         """Get raw database connection."""
