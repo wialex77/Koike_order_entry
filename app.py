@@ -334,7 +334,11 @@ def upload_file():
         
         # Update processing result with metrics and raw JSON data
         processing_end_time = datetime.now()
-        processing_duration = (processing_end_time - processing_result.processing_start_time).total_seconds()
+        # Get the processing result object to access processing_start_time
+        processing_result_obj = metrics_db.get_processing_result(processing_result_id)
+        if not processing_result_obj:
+            raise Exception(f"Processing result with ID {processing_result_id} not found")
+        processing_duration = (processing_end_time - processing_result_obj.processing_start_time).total_seconds()
         
         # Get the Epicor JSON data - try to generate it even if validation fails
         try:
@@ -406,7 +410,7 @@ def upload_file():
         
     except Exception as e:
         # Update processing result with error if it exists
-        if processing_result:
+        if processing_result_id:
             metrics_db.update_processing_result(
                 processing_result_id,
                 processing_status=ProcessingStatus.ERROR,
