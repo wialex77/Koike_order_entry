@@ -252,7 +252,7 @@ def upload_file():
         processed_filename = f"processed_{timestamp}.json"
         processed_path = os.path.join(app.config['PROCESSED_FOLDER'], processed_filename)
         
-        processing_result = metrics_db.create_processing_result(
+        processing_result_id = metrics_db.create_processing_result(
             filename=processed_filename,
             original_filename=file.filename,
             file_size=os.path.getsize(file_path),
@@ -269,9 +269,9 @@ def upload_file():
             po_data = document_processor.process_document(file_path)
         except Exception as e:
             # Update processing result with error
-            if processing_result:
+            if processing_result_id:
                 metrics_db.update_processing_result(
-                    processing_result.id,
+                    processing_result_id,
                     processing_status=ProcessingStatus.ERROR,
                     error_details=f'Document processing failed: {str(e)}'
                 )
@@ -287,7 +287,7 @@ def upload_file():
             # Update processing result with error
             if processing_result:
                 metrics_db.update_processing_result(
-                    processing_result.id,
+                    processing_result_id,
                     processing_status=ProcessingStatus.ERROR,
                     error_details=f'Mapping failed: {str(e)}'
                 )
@@ -352,7 +352,7 @@ def upload_file():
                 raw_json_data = json.dumps(part_mapper.export_to_json(mapped_data), indent=2)
         
         metrics_db.update_processing_result(
-            processing_result.id,
+            processing_result_id,
             processing_status=ProcessingStatus.COMPLETED,
             processing_end_time=processing_end_time,
             processing_duration=processing_duration,
@@ -378,11 +378,11 @@ def upload_file():
             increment_missing_fields(missing_fields)
             
             # Store missing fields as a note
-            existing_notes = metrics_db.get_processing_result(processing_result.id).notes or ""
+            existing_notes = metrics_db.get_processing_result(processing_result_id).notes or ""
             missing_fields_note = f"Missing fields: {', '.join(missing_fields)}"
             updated_notes = f"{existing_notes}\n{missing_fields_note}" if existing_notes else missing_fields_note
             metrics_db.update_processing_result(
-                processing_result.id,
+                processing_result_id,
                 notes=updated_notes
             )
         
@@ -400,7 +400,7 @@ def upload_file():
             'review_report': review_report,
             'processed_file': processed_filename,
             'validation': validation,
-            'processing_result_id': processing_result.id,
+            'processing_result_id': processing_result_id,
             'missing_fields': missing_fields
         })
         
@@ -408,7 +408,7 @@ def upload_file():
         # Update processing result with error if it exists
         if processing_result:
             metrics_db.update_processing_result(
-                processing_result.id,
+                processing_result_id,
                 processing_status=ProcessingStatus.ERROR,
                 error_details=f'Unexpected error: {str(e)}'
             )
