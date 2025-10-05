@@ -1,19 +1,19 @@
 version: 1.0
-runtime: python3
+runtime: docker
 build:
   commands:
     build:
-      - echo "Installing dependencies..."
-      - pip install -r requirements.txt
+      - echo "Building Docker image with Tesseract OCR..."
+      - docker build -t arzana-app .
       - echo "Build completed"
 run:
   runtime-version: 3.9
-  command: python app.py
+  command: gunicorn --bind 0.0.0.0:8080 --workers 2 --timeout 300 app:app
   network:
     port: 8080
     env: PORT
   env:
     - name: FLASK_ENV
       value: production
-    - name: PYTHONPATH
-      value: /var/app/current
+    - name: TESSERACT_CMD
+      value: /usr/bin/tesseract

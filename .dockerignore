@@ -1,0 +1,54 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Local data (will be created in container)
+data/
+uploads/
+processed/
+
+# Node modules (if any)
+node_modules/
+
+# AWS deployment files
+.elasticbeanstalk/
+.aws/
+
+# SSL certificates (not needed in production)
+*.pem
+*.key
+
+# Test files
+test_*.txt
+*.test.*
+
+# Documentation
+README.md
+*.md
