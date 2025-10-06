@@ -89,79 +89,19 @@ class MetricsDatabase:
         self.init_database()
     
     def init_database(self):
-        """Initialize the metrics database with required tables."""
-        print(f"🔍 Initializing database - is_postgres: {self.db_config.is_postgres}")
+        """Test database connection - tables already exist in Supabase."""
+        print(f"🔍 Testing database connection - is_postgres: {self.db_config.is_postgres}")
         try:
-            # Create processing_results table
-            create_table_sql = '''
-                CREATE TABLE IF NOT EXISTS processing_results (
-                    id SERIAL PRIMARY KEY,
-                    filename VARCHAR(255) NOT NULL,
-                    original_filename VARCHAR(255) NOT NULL,
-                    file_size INTEGER NOT NULL,
-                    processing_status VARCHAR(50) NOT NULL,
-                    validation_status VARCHAR(50) NOT NULL,
-                    processing_start_time TIMESTAMP NOT NULL,
-                    processing_end_time TIMESTAMP,
-                    processing_duration FLOAT,
-                    total_parts INTEGER DEFAULT 0,
-                    parts_mapped INTEGER DEFAULT 0,
-                    parts_not_found INTEGER DEFAULT 0,
-                    parts_manual_review INTEGER DEFAULT 0,
-                    mapping_success_rate FLOAT DEFAULT 0.0,
-                    customer_matched BOOLEAN DEFAULT FALSE,
-                    customer_match_confidence FLOAT DEFAULT 0.0,
-                    error_types TEXT,
-                    error_details TEXT,
-                    manual_corrections_made INTEGER DEFAULT 0,
-                    epicor_ready BOOLEAN DEFAULT FALSE,
-                    epicor_ready_with_one_click BOOLEAN DEFAULT FALSE,
-                    missing_info_count INTEGER DEFAULT 0,
-                    processed_file_path TEXT,
-                    epicor_json_path TEXT,
-                    raw_json_data TEXT,
-                    notes TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            ''' if self.db_config.is_postgres else '''
-                CREATE TABLE IF NOT EXISTS processing_results (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    filename TEXT NOT NULL,
-                    original_filename TEXT NOT NULL,
-                    file_size INTEGER NOT NULL,
-                    processing_status TEXT NOT NULL,
-                    validation_status TEXT NOT NULL,
-                    processing_start_time TIMESTAMP NOT NULL,
-                    processing_end_time TIMESTAMP,
-                    processing_duration REAL,
-                    total_parts INTEGER DEFAULT 0,
-                    parts_mapped INTEGER DEFAULT 0,
-                    parts_not_found INTEGER DEFAULT 0,
-                    parts_manual_review INTEGER DEFAULT 0,
-                    mapping_success_rate REAL DEFAULT 0.0,
-                    customer_matched BOOLEAN DEFAULT 0,
-                    customer_match_confidence REAL DEFAULT 0.0,
-                    error_types TEXT,
-                    error_details TEXT,
-                    manual_corrections_made INTEGER DEFAULT 0,
-                    epicor_ready BOOLEAN DEFAULT 0,
-                    epicor_ready_with_one_click BOOLEAN DEFAULT 0,
-                    missing_info_count INTEGER DEFAULT 0,
-                    processed_file_path TEXT,
-                    epicor_json_path TEXT,
-                    raw_json_data TEXT,
-                    notes TEXT,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-                )
-            '''
-            
-            self.db_config.execute_raw_sql(create_table_sql)
-            print("✅ Database table 'processing_results' initialized")
-            
+            # Test PostgreSQL connection
+            test_sql = "SELECT 1 as test"
+            result = self.db_config.execute_raw_sql_single(test_sql)
+            if result:
+                print("✅ PostgreSQL database connection verified")
+            else:
+                print("❌ PostgreSQL database connection failed")
+                
         except Exception as e:
-            print(f"❌ Error initializing database: {e}")
+            print(f"❌ Error testing database connection: {e}")
             import traceback
             traceback.print_exc()
     
