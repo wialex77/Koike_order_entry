@@ -84,10 +84,13 @@ class MetricsDatabase:
     
     def __init__(self):
         self.db_config = db_config
+        print(f"🔍 Database config - is_postgres: {self.db_config.is_postgres}")
+        print(f"🔍 Database config - engine: {self.db_config.engine}")
         self.init_database()
     
     def init_database(self):
         """Initialize the metrics database with required tables."""
+        print(f"🔍 Initializing database - is_postgres: {self.db_config.is_postgres}")
         try:
             # Create processing_results table
             create_table_sql = '''
@@ -159,6 +162,8 @@ class MetricsDatabase:
             
         except Exception as e:
             print(f"❌ Error initializing database: {e}")
+            import traceback
+            traceback.print_exc()
     
     def save_processing_result(self, result: ProcessingResult) -> int:
         """Save a processing result to the database."""
@@ -445,35 +450,37 @@ class MetricsDatabase:
                                 processing_start_time: datetime, processed_file_path: str, 
                                 raw_json_data: str, notes: str = "") -> int:
         """Create a new processing result."""
+        print(f"🔍 Creating processing result - is_postgres: {self.db_config.is_postgres}")
         try:
             sql = '''
                 INSERT INTO processing_results (
                     filename, original_filename, file_size, processing_status, validation_status,
                     processing_start_time, processed_file_path, raw_json_data, notes, created_at, updated_at
-                ) VALUES (:filename, :original_filename, :file_size, :processing_status, :validation_status,
-                         :processing_start_time, :processed_file_path, :raw_json_data, :notes, :created_at, :updated_at)
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 RETURNING id
             '''
             
             now = datetime.utcnow()
-            result = self.db_config.execute_raw_sql_single(sql, {
-                'filename': filename,
-                'original_filename': original_filename,
-                'file_size': file_size,
-                'processing_status': processing_status.value,
-                'validation_status': validation_status.value,
-                'processing_start_time': processing_start_time,
-                'processed_file_path': processed_file_path,
-                'raw_json_data': raw_json_data,
-                'notes': notes,
-                'created_at': now,
-                'updated_at': now
-            })
+            result = self.db_config.execute_raw_sql_single(sql, (
+                filename,
+                original_filename,
+                file_size,
+                processing_status.value,
+                validation_status.value,
+                processing_start_time,
+                processed_file_path,
+                raw_json_data,
+                notes,
+                now,
+                now
+            ))
             
             return result[0] if result else 0
             
         except Exception as e:
             print(f"❌ Error creating processing result: {e}")
+            import traceback
+            traceback.print_exc()
             return 0
 
     def update_processing_result(self, result_id: int, **kwargs) -> bool:
@@ -573,6 +580,8 @@ class MetricsDatabase:
             
         except Exception as e:
             print(f"❌ Error getting processing result: {e}")
+            import traceback
+            traceback.print_exc()
             return None
 
     def delete_processing_result(self, result_id: int) -> bool:
