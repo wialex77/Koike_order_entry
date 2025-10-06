@@ -18,7 +18,7 @@ load_dotenv('config.env')
 # Import our custom modules
 from step1_upload import FileUploadHandler
 from step2_ocr_ai import DocumentProcessor
-from step3_databases import DatabaseManager
+from step3_databases_supabase import SupabaseDatabaseManager
 from step4_mapping import PartNumberMapper
 from step5_metrics_db_postgres import MetricsDatabase, ProcessingStatus, ValidationStatus, ErrorType
 from database_config import db_config
@@ -46,7 +46,7 @@ os.makedirs('templates', exist_ok=True)
 # Initialize components
 file_handler = FileUploadHandler(app.config['UPLOAD_FOLDER'])
 document_processor = DocumentProcessor()
-db_manager = DatabaseManager()
+db_manager = SupabaseDatabaseManager()
 part_mapper = PartNumberMapper(db_manager)
 metrics_db = MetricsDatabase()
 
