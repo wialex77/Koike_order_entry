@@ -150,11 +150,6 @@ def index():
     """Main page with file upload form."""
     return render_template('index.html')
 
-@app.route('/health-check', methods=['GET'])
-def health_check():
-    """Simple health check endpoint to verify Flask app is running."""
-    return jsonify({'status': 'ok', 'message': 'Flask app is running'})
-
 @app.route('/progress')
 def progress():
     """Server-Sent Events endpoint for real-time progress updates."""
@@ -257,29 +252,23 @@ def upload_file():
         processed_filename = f"processed_{timestamp}.json"
         processed_path = os.path.join(app.config['PROCESSED_FOLDER'], processed_filename)
         
-        processing_result_id = metrics_db.create_processing_result(
+        processing_result = metrics_db.create_processing_result(
             filename=processed_filename,
             original_filename=file.filename,
             file_size=os.path.getsize(file_path),
-            processing_status=ProcessingStatus.PROCESSING,
-            validation_status=ValidationStatus.PENDING_REVIEW,
-            processing_start_time=datetime.now(),
             processed_file_path=processed_path,
             raw_json_data='{}'  # Will be updated after processing
         )
         
-        
         # Step 2: Process document with OCR/AI
         current_progress = {'percentage': 40, 'status': 'Finding account number and address...'}
-        print(f"🔍 Starting document processing for {file.filename}")
         try:
             po_data = document_processor.process_document(file_path)
-            print(f"✅ Document processing completed for {file.filename}")
         except Exception as e:
             # Update processing result with error
-            if processing_result_id:
+            if processing_result:
                 metrics_db.update_processing_result(
-                    processing_result_id,
+                    processing_result.id,
                     processing_status=ProcessingStatus.ERROR,
                     error_details=f'Document processing failed: {str(e)}'
                 )
@@ -289,15 +278,13 @@ def upload_file():
         
         # Step 3 & 4: Map part numbers and lookup account
         current_progress = {'percentage': 70, 'status': 'Mapping part numbers...'}
-        print(f"🔍 Starting part mapping for {file.filename}")
         try:
             mapped_data = part_mapper.process_purchase_order(po_data)
-            print(f"✅ Part mapping completed for {file.filename}")
         except Exception as e:
             # Update processing result with error
-            if processing_result_id:
+            if processing_result:
                 metrics_db.update_processing_result(
-                    processing_result_id,
+                    processing_result.id,
                     processing_status=ProcessingStatus.ERROR,
                     error_details=f'Mapping failed: {str(e)}'
                 )
@@ -307,20 +294,14 @@ def upload_file():
         
         # Save processed data
         current_progress = {'percentage': 90, 'status': 'Finalizing results...'}
-        print(f"🔍 Saving mapped data for {file.filename}")
         
         part_mapper.save_mapped_data(mapped_data, processed_path)
-        print(f"✅ Mapped data saved for {file.filename}")
         
         # Generate manual review report
-        print(f"🔍 Generating review report for {file.filename}")
         review_report = part_mapper.generate_manual_review_report(mapped_data)
-        print(f"✅ Review report generated for {file.filename}")
         
         # Get validation results
-        print(f"🔍 Validating for Epicor export for {file.filename}")
         validation = part_mapper.validate_for_epicor_export(mapped_data)
-        print(f"✅ Validation completed for {file.filename}")
         
         # Calculate metrics
         summary = mapped_data.processing_summary
@@ -350,12 +331,7 @@ def upload_file():
         
         # Update processing result with metrics and raw JSON data
         processing_end_time = datetime.now()
-        
-        # Get the processing result object to access processing_start_time
-        processing_result_obj = metrics_db.get_processing_result(processing_result_id)
-        if not processing_result_obj:
-            raise Exception(f"Processing result with ID {processing_result_id} not found")
-        processing_duration = (processing_end_time - processing_result_obj.processing_start_time).total_seconds()
+        processing_duration = (processing_end_time - processing_result.processing_start_time).total_seconds()
         
         # Get the Epicor JSON data - try to generate it even if validation fails
         try:
@@ -372,9 +348,8 @@ def upload_file():
                 # If that also fails, fall back to internal format
                 raw_json_data = json.dumps(part_mapper.export_to_json(mapped_data), indent=2)
         
-        print(f"🔍 Updating processing result in database for {file.filename}")
         metrics_db.update_processing_result(
-            processing_result_id,
+            processing_result.id,
             processing_status=ProcessingStatus.COMPLETED,
             processing_end_time=processing_end_time,
             processing_duration=processing_duration,
@@ -400,11 +375,11 @@ def upload_file():
             increment_missing_fields(missing_fields)
             
             # Store missing fields as a note
-            existing_notes = metrics_db.get_processing_result(processing_result_id).notes or ""
+            existing_notes = metrics_db.get_processing_result(processing_result.id).notes or ""
             missing_fields_note = f"Missing fields: {', '.join(missing_fields)}"
             updated_notes = f"{existing_notes}\n{missing_fields_note}" if existing_notes else missing_fields_note
             metrics_db.update_processing_result(
-                processing_result_id,
+                processing_result.id,
                 notes=updated_notes
             )
         
@@ -422,15 +397,15 @@ def upload_file():
             'review_report': review_report,
             'processed_file': processed_filename,
             'validation': validation,
-            'processing_result_id': processing_result_id,
+            'processing_result_id': processing_result.id,
             'missing_fields': missing_fields
         })
         
     except Exception as e:
         # Update processing result with error if it exists
-        if processing_result_id:
+        if processing_result:
             metrics_db.update_processing_result(
-                processing_result_id,
+                processing_result.id,
                 processing_status=ProcessingStatus.ERROR,
                 error_details=f'Unexpected error: {str(e)}'
             )

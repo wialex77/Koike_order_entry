@@ -442,11 +442,6 @@ class MetricsDatabase:
                                 raw_json_data: str, notes: str = "") -> int:
         """Create a new processing result."""
         try:
-            # Check if we're connected to a working database
-            if not self.db_config.engine:
-                print("❌ No database engine available")
-                return 0
-                
             sql = '''
                 INSERT INTO processing_results (
                     filename, original_filename, file_size, processing_status, validation_status,
@@ -471,18 +466,10 @@ class MetricsDatabase:
                 'updated_at': now
             })
             
-            print(f"🔍 create_processing_result: result = {result}")
-            if result and len(result) > 0:
-                print(f"✅ Created processing result with ID: {result[0]}")
-                return result[0]
-            else:
-                print(f"❌ Failed to create processing result - result is None or empty")
-                return 0
+            return result[0] if result else 0
             
         except Exception as e:
             print(f"❌ Error creating processing result: {e}")
-            import traceback
-            traceback.print_exc()
             return 0
 
     def update_processing_result(self, result_id: int, **kwargs) -> bool:
@@ -533,12 +520,9 @@ class MetricsDatabase:
         """Get a processing result by ID."""
         try:
             sql = "SELECT * FROM processing_results WHERE id = :id"
-            print(f"🔍 get_processing_result: Looking for ID {result_id}")
             row = self.db_config.execute_raw_sql_single(sql, {'id': result_id})
-            print(f"🔍 get_processing_result: Query result = {row}")
             
             if row:
-                print(f"✅ Found processing result with ID {result_id}, creating object...")
                 error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
                 
                 return ProcessingResult(
@@ -571,9 +555,7 @@ class MetricsDatabase:
                     created_at=row[26],
                     updated_at=row[27]
                 )
-            else:
-                print(f"❌ No processing result found with ID {result_id}")
-                return None
+            return None
             
         except Exception as e:
             print(f"❌ Error getting processing result: {e}")
