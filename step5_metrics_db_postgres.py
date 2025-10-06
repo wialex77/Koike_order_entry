@@ -84,23 +84,20 @@ class MetricsDatabase:
     
     def __init__(self):
         self.db_config = db_config
-        print(f"🔍 Database config - is_postgres: {self.db_config.is_postgres}")
-        print(f"🔍 Database config - engine: {self.db_config.engine}")
+        print(f"🔍 Database config - PostgreSQL engine: {self.db_config.engine}")
         self.init_database()
     
     def init_database(self):
         """Test database connection - tables already exist in Supabase."""
-        print(f"🔍 Testing database connection - is_postgres: {self.db_config.is_postgres}")
+        print(f"🔍 Testing PostgreSQL database connection")
         try:
             # Test database connection
             test_sql = "SELECT 1 as test"
             result = self.db_config.execute_raw_sql_single(test_sql)
             if result:
-                db_type = "PostgreSQL" if self.db_config.is_postgres else "SQLite"
-                print(f"✅ {db_type} database connection verified")
+                print("✅ PostgreSQL database connection verified")
             else:
-                db_type = "PostgreSQL" if self.db_config.is_postgres else "SQLite"
-                print(f"❌ {db_type} database connection failed")
+                print("❌ PostgreSQL database connection failed")
                 
         except Exception as e:
             print(f"❌ Error testing database connection: {e}")

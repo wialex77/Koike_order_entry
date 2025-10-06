@@ -1,10 +1,9 @@
 """
 Database Configuration Module
-Handles both SQLite (development) and PostgreSQL (production) databases.
+Handles PostgreSQL/Supabase database connections only.
 """
 
 import os
-import sqlite3
 import json
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
@@ -14,21 +13,18 @@ from urllib.parse import quote_plus
 Base = declarative_base()
 
 class DatabaseConfig:
-    """Database configuration manager for SQLite and PostgreSQL."""
+    """Database configuration manager for PostgreSQL/Supabase only."""
     
     def __init__(self):
         self.engine = None
         self.session_factory = None
-        self.is_postgres = False
+        self.is_postgres = True  # Always PostgreSQL now
         
-        # Check if we're in production (App Runner)
-        if os.environ.get('FLASK_ENV') == 'production':
-            self._setup_postgresql()
-        else:
-            self._setup_sqlite()
+        # Always setup PostgreSQL/Supabase
+        self._setup_postgresql()
     
     def _setup_postgresql(self):
-        """Setup PostgreSQL connection for production (Supabase)."""
+        """Setup PostgreSQL connection for Supabase."""
         # Get database connection details from environment variables
         db_host = os.environ.get('DB_HOST', 'db.xxxxxxxxxxxx.supabase.co')
         db_port = os.environ.get('DB_PORT', '5432')
@@ -46,23 +42,7 @@ class DatabaseConfig:
             print(f"✅ Connected to Supabase PostgreSQL database: {db_host}")
         except Exception as e:
             print(f"❌ Failed to connect to Supabase PostgreSQL: {e}")
-            print("Falling back to SQLite for development...")
-            self._setup_sqlite()
-    
-    def _get_db_password(self):
-        """Get database password from environment variable."""
-        return os.environ.get('DB_PASSWORD', 'your_password_here')
-    
-    def _setup_sqlite(self):
-        """Setup SQLite connection for development."""
-        db_path = "data/metrics.db"
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        
-        connection_string = f"sqlite:///{db_path}"
-        self.engine = create_engine(connection_string, echo=False)
-        self.session_factory = sessionmaker(bind=self.engine)
-        self.is_postgres = False
-        print(f"✅ Connected to SQLite database: {db_path}")
+            raise Exception(f"Database connection failed: {e}")
     
     def get_session(self):
         """Get a database session."""
@@ -82,12 +62,7 @@ class DatabaseConfig:
     
     def get_connection(self):
         """Get raw database connection."""
-        if self.is_postgres:
-            # For PostgreSQL, return SQLAlchemy connection
-            return self.engine.connect()
-        else:
-            # For SQLite, return sqlite3 connection for compatibility
-            return sqlite3.connect(self.engine.url.database)
+        return self.engine.connect()
 
 # Global database configuration
 db_config = DatabaseConfig()
