@@ -535,7 +535,7 @@ class MetricsDatabase:
             if row:
                 # Parse error_types JSON safely
                 try:
-                    error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+                    error_types = [ErrorType(e) for e in json.loads(row[16] or '[]')]
                 except (json.JSONDecodeError, ValueError):
                     error_types = []
                 
@@ -557,7 +557,7 @@ class MetricsDatabase:
                     customer_matched=row[14] or False,
                     customer_match_confidence=row[15] or 0.0,
                     error_types=error_types,
-                    error_details=row[16] or '',
+                    error_details=row[17] or '',
                     manual_corrections_made=row[18] or 0,
                     epicor_ready=row[19] or False,
                     epicor_ready_with_one_click=row[20] or False,
