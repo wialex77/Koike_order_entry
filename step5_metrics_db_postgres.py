@@ -201,7 +201,7 @@ class MetricsDatabase:
             if result.id is None:
                 # New record
                 columns = ', '.join(data.keys())
-                placeholders = ', '.join([f':{key}' for key in data.keys()])
+                placeholders = ', '.join(['%s' for _ in data.keys()])
                 
                 if self.db_config.is_postgres:
                     sql = f'''
@@ -209,7 +209,9 @@ class MetricsDatabase:
                         VALUES ({placeholders})
                         RETURNING id
                     '''
-                    result_id = self.db_config.execute_raw_sql_single(sql, data)[0]
+                    # Convert data to tuple for PostgreSQL
+                    values = [data[key] for key in data.keys()]
+                    result_id = self.db_config.execute_raw_sql_single(sql, values)[0]
                 else:
                     sql = f'''
                         INSERT INTO processing_results ({columns})
@@ -222,14 +224,16 @@ class MetricsDatabase:
                     cursor.connection.close()
             else:
                 # Update existing record
-                set_clause = ', '.join([f'{key} = :{key}' for key in data.keys() if key != 'id'])
+                set_clause = ', '.join([f'{key} = %s' for key in data.keys() if key != 'id'])
                 sql = f'''
                     UPDATE processing_results 
                     SET {set_clause}, updated_at = CURRENT_TIMESTAMP
-                    WHERE id = :id
+                    WHERE id = %s
                 '''
                 data['id'] = result.id
-                self.db_config.execute_raw_sql(sql, data)
+                # Convert data to tuple for PostgreSQL
+                values = [data[key] for key in data.keys()]
+                self.db_config.execute_raw_sql(sql, values)
                 result_id = result.id
             
             return result_id
@@ -244,10 +248,10 @@ class MetricsDatabase:
             sql = '''
                 SELECT * FROM processing_results 
                 ORDER BY created_at DESC 
-                LIMIT :limit
+                LIMIT %s
             '''
             
-            rows = self.db_config.execute_raw_sql(sql, {'limit': limit})
+            rows = self.db_config.execute_raw_sql(sql, (limit,))
             
             results = []
             for row in rows:
@@ -298,10 +302,10 @@ class MetricsDatabase:
             sql = '''
                 SELECT * FROM processing_results 
                 ORDER BY created_at DESC 
-                LIMIT :limit OFFSET :offset
+                LIMIT %s OFFSET %s
             '''
             
-            rows = self.db_config.execute_raw_sql(sql, {'limit': limit, 'offset': offset})
+            rows = self.db_config.execute_raw_sql(sql, (limit, offset))
             
             results = []
             for row in rows:
@@ -351,12 +355,12 @@ class MetricsDatabase:
         try:
             sql = '''
                 SELECT * FROM processing_results 
-                WHERE filename = :filename 
+                WHERE filename = %s 
                 ORDER BY created_at DESC 
                 LIMIT 1
             '''
             
-            row = self.db_config.execute_raw_sql_single(sql, {'filename': filename})
+            row = self.db_config.execute_raw_sql_single(sql, (filename,))
             
             if row:
                 # Convert row to ProcessingResult object
@@ -489,27 +493,23 @@ class MetricsDatabase:
                 elif isinstance(value, datetime):
                     value = value.isoformat()
                     
-                set_clauses.append(f"{key} = :{key}")
+                set_clauses.append(f"{key} = %s")
                 values.append(value)
             
             if not set_clauses:
                 return True
                 
-            set_clauses.append("updated_at = :updated_at")
+            set_clauses.append("updated_at = %s")
             values.append(datetime.utcnow())
             values.append(result_id)
             
             sql = f'''
                 UPDATE processing_results 
                 SET {', '.join(set_clauses)}
-                WHERE id = :id
+                WHERE id = %s
             '''
             
-            params = {f'param_{i}': val for i, val in enumerate(values[:-1])}
-            params['id'] = values[-1]
-            params['updated_at'] = datetime.utcnow()
-            
-            self.db_config.execute_raw_sql(sql, params)
+            self.db_config.execute_raw_sql(sql, values)
             return True
             
         except Exception as e:
@@ -528,9 +528,9 @@ class MetricsDatabase:
                        manual_corrections_made, epicor_ready, epicor_ready_with_one_click, 
                        missing_info_count, processed_file_path, epicor_json_path, 
                        raw_json_data, notes, created_at, updated_at
-                FROM processing_results WHERE id = :id
+                FROM processing_results WHERE id = %s
             """
-            row = self.db_config.execute_raw_sql_single(sql, {'id': result_id})
+            row = self.db_config.execute_raw_sql_single(sql, (result_id,))
             
             if row:
                 # Parse error_types JSON safely
@@ -578,8 +578,8 @@ class MetricsDatabase:
     def delete_processing_result(self, result_id: int) -> bool:
         """Delete a processing result."""
         try:
-            sql = "DELETE FROM processing_results WHERE id = :id"
-            self.db_config.execute_raw_sql(sql, {'id': result_id})
+            sql = "DELETE FROM processing_results WHERE id = %s"
+            self.db_config.execute_raw_sql(sql, (result_id,))
             return True
             
         except Exception as e:
