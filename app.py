@@ -256,6 +256,9 @@ def upload_file():
             filename=processed_filename,
             original_filename=file.filename,
             file_size=os.path.getsize(file_path),
+            processing_status=ProcessingStatus.PROCESSING,
+            validation_status=ValidationStatus.PENDING_REVIEW,
+            processing_start_time=datetime.now(),
             processed_file_path=processed_path,
             raw_json_data='{}'  # Will be updated after processing
         )
