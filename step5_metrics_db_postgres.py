@@ -92,13 +92,15 @@ class MetricsDatabase:
         """Test database connection - tables already exist in Supabase."""
         print(f"🔍 Testing database connection - is_postgres: {self.db_config.is_postgres}")
         try:
-            # Test PostgreSQL connection
+            # Test database connection
             test_sql = "SELECT 1 as test"
             result = self.db_config.execute_raw_sql_single(test_sql)
             if result:
-                print("✅ PostgreSQL database connection verified")
+                db_type = "PostgreSQL" if self.db_config.is_postgres else "SQLite"
+                print(f"✅ {db_type} database connection verified")
             else:
-                print("❌ PostgreSQL database connection failed")
+                db_type = "PostgreSQL" if self.db_config.is_postgres else "SQLite"
+                print(f"❌ {db_type} database connection failed")
                 
         except Exception as e:
             print(f"❌ Error testing database connection: {e}")

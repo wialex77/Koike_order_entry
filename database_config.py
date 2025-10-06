@@ -71,19 +71,13 @@ class DatabaseConfig:
     def execute_raw_sql(self, sql, params=None):
         """Execute raw SQL query."""
         with self.engine.connect() as conn:
-            if self.is_postgres:
-                result = conn.execute(text(sql), params or {})
-            else:
-                result = conn.execute(sql, params or {})
+            result = conn.execute(text(sql), params or {})
             return result.fetchall()
     
     def execute_raw_sql_single(self, sql, params=None):
         """Execute raw SQL query and return single result."""
         with self.engine.connect() as conn:
-            if self.is_postgres:
-                result = conn.execute(text(sql), params or {})
-            else:
-                result = conn.execute(sql, params or {})
+            result = conn.execute(text(sql), params or {})
             return result.fetchone()
     
     def get_connection(self):
