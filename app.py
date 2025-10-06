@@ -252,7 +252,8 @@ def upload_file():
         processed_filename = f"processed_{timestamp}.json"
         processed_path = os.path.join(app.config['PROCESSED_FOLDER'], processed_filename)
         
-        processing_result = metrics_db.create_processing_result(
+        # PostgreSQL version returns an ID, so we need to fetch the full object
+        processing_result_id = metrics_db.create_processing_result(
             filename=processed_filename,
             original_filename=file.filename,
             file_size=os.path.getsize(file_path),
@@ -262,6 +263,15 @@ def upload_file():
             processed_file_path=processed_path,
             raw_json_data='{}'  # Will be updated after processing
         )
+        
+        # Check if creation succeeded
+        if processing_result_id == 0:
+            return jsonify({'error': 'Failed to create processing result'}), 500
+        
+        # Get the full processing result object
+        processing_result = metrics_db.get_processing_result(processing_result_id)
+        if not processing_result:
+            return jsonify({'error': 'Failed to retrieve processing result'}), 500
         
         # Step 2: Process document with OCR/AI
         current_progress = {'percentage': 40, 'status': 'Finding account number and address...'}
