@@ -519,11 +519,25 @@ class MetricsDatabase:
     def get_processing_result(self, result_id: int) -> Optional[ProcessingResult]:
         """Get a processing result by ID."""
         try:
-            sql = "SELECT * FROM processing_results WHERE id = :id"
+            sql = """
+                SELECT id, filename, original_filename, file_size, processing_status, 
+                       validation_status, processing_start_time, processing_end_time, 
+                       processing_duration, total_parts, parts_mapped, parts_not_found, 
+                       parts_manual_review, mapping_success_rate, customer_matched, 
+                       customer_match_confidence, error_details, error_types, 
+                       manual_corrections_made, epicor_ready, epicor_ready_with_one_click, 
+                       missing_info_count, processed_file_path, epicor_json_path, 
+                       raw_json_data, notes, created_at, updated_at
+                FROM processing_results WHERE id = :id
+            """
             row = self.db_config.execute_raw_sql_single(sql, {'id': result_id})
             
             if row:
-                error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+                # Parse error_types JSON safely
+                try:
+                    error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+                except (json.JSONDecodeError, ValueError):
+                    error_types = []
                 
                 return ProcessingResult(
                     id=row[0],
