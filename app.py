@@ -22,6 +22,7 @@ from step3_databases_supabase import SupabaseDatabaseManager
 from step4_mapping import PartNumberMapper
 from step5_metrics_db_postgres import MetricsDatabase, ProcessingStatus, ValidationStatus, ErrorType
 from database_config import db_config
+from comprehensive_hybrid_database_manager import ComprehensiveHybridDatabaseManager
 
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-change-this'  # Change this in production
@@ -46,9 +47,9 @@ os.makedirs('templates', exist_ok=True)
 # Initialize components
 file_handler = FileUploadHandler(app.config['UPLOAD_FOLDER'])
 document_processor = DocumentProcessor()
-db_manager = SupabaseDatabaseManager()
-part_mapper = PartNumberMapper(db_manager)
-metrics_db = MetricsDatabase()
+db_manager = ComprehensiveHybridDatabaseManager()  # Use comprehensive hybrid database manager
+part_mapper = PartNumberMapper(db_manager)  # Pass the hybrid manager to part mapper
+metrics_db = db_manager  # Use the same instance for metrics
 
 MISSING_FIELDS_TRACKER_PATH = 'data/missing_fields_tracker.json'
 
@@ -630,6 +631,15 @@ def get_dashboard_metrics():
         # Add missing fields stats
         metrics['missing_fields_stats'] = get_missing_fields_stats()
         return jsonify(metrics)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/connection/status')
+def get_connection_status():
+    """Get database connection status."""
+    try:
+        status = metrics_db.get_connection_status()
+        return jsonify(status)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
