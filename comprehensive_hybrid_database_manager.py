@@ -63,8 +63,11 @@ class ComprehensiveHybridDatabaseManager:
         # Try PostgreSQL first, fallback to REST API
         self._initialize_connection()
         
-        # Don't load databases at startup - load on demand
-        print("✅ Database manager initialized (lazy loading enabled)")
+        # Load databases at startup for compatibility
+        if self.use_postgres or self.use_rest_api:
+            self.load_databases()
+        
+        print("✅ Database manager initialized")
     
     def _load_environment(self):
         """Load environment variables from AWS environment variables."""
