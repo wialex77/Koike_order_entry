@@ -46,11 +46,13 @@ class ComprehensiveHybridDatabaseManager:
         self.supabase_url = None
         self.api_key = None
         
-        # Data storage
+        # Data storage - now loaded on demand
         self.parts_df = None
         self.customers_df = None
+        self._parts_loaded = False
+        self._customers_loaded = False
         
-        # Search optimization indexes
+        # Search optimization indexes - now built on demand
         self.parts_by_exact_match = {}
         self.parts_by_keywords = defaultdict(list)
         self.description_words = {}
@@ -61,8 +63,8 @@ class ComprehensiveHybridDatabaseManager:
         # Try PostgreSQL first, fallback to REST API
         self._initialize_connection()
         
-        # Load databases
-        self.load_databases()
+        # Don't load databases at startup - load on demand
+        print("✅ Database manager initialized (lazy loading enabled)")
     
     def _load_environment(self):
         """Load environment variables from AWS environment variables."""
@@ -356,53 +358,137 @@ class ComprehensiveHybridDatabaseManager:
         
         return words
     
-    # Parts search methods (same as original SupabaseDatabaseManager)
+    # Parts search methods - now using direct database queries
     def search_parts(self, query: str, limit: int = 10) -> List[Dict]:
-        """Search for parts using fuzzy matching."""
-        if not query or self.parts_df is None or self.parts_df.empty:
+        """Search for parts using direct database queries."""
+        if not query:
             return []
         
-        query = query.strip().upper()
-        results = []
+        query = query.strip()
+        
+        try:
+            if self.use_postgres:
+                return self._search_parts_postgres(query, limit)
+            elif self.use_rest_api:
+                return self._search_parts_rest_api(query, limit)
+            else:
+                print("❌ No database connection available for search")
+                return []
+        except Exception as e:
+            print(f"❌ Error searching parts: {e}")
+            return []
+    
+    def _search_parts_postgres(self, query: str, limit: int) -> List[Dict]:
+        """Search parts using PostgreSQL with optimized queries."""
+        from database_config import db_config
         
         # First try exact match
-        if query in self.parts_by_exact_match:
-            idx = self.parts_by_exact_match[query]
-            row = self.parts_df.iloc[idx]
+        exact_sql = """
+            SELECT internal_part_number, description 
+            FROM parts 
+            WHERE UPPER(internal_part_number) = :query
+            LIMIT 1
+        """
+        exact_results = db_config.execute_raw_sql(exact_sql, {'query': query.upper()})
+        
+        results = []
+        if exact_results:
             results.append({
-                'internal_part_number': row['internal_part_number'],
-                'description': row['description'],
+                'internal_part_number': exact_results[0][0],
+                'description': exact_results[0][1],
                 'match_type': 'exact',
                 'score': 1.0
             })
         
-        # Then try keyword matching
+        # If we need more results, do fuzzy search
         if len(results) < limit:
-            keyword_matches = set()
-            query_words = self._extract_words(query)
+            fuzzy_sql = """
+                SELECT internal_part_number, description,
+                       CASE 
+                           WHEN UPPER(internal_part_number) LIKE :query_start THEN 0.9
+                           WHEN UPPER(internal_part_number) LIKE :query_contains THEN 0.7
+                           WHEN UPPER(description) LIKE :query_start THEN 0.6
+                           WHEN UPPER(description) LIKE :query_contains THEN 0.4
+                           ELSE 0.3
+                       END as score
+                FROM parts 
+                WHERE UPPER(internal_part_number) LIKE :query_contains 
+                   OR UPPER(description) LIKE :query_contains
+                ORDER BY score DESC, internal_part_number
+                LIMIT :limit
+            """
             
-            for word in query_words:
-                if word in self.parts_by_keywords:
-                    keyword_matches.update(self.parts_by_keywords[word])
+            fuzzy_results = db_config.execute_raw_sql(fuzzy_sql, {
+                'query_start': f'{query.upper()}%',
+                'query_contains': f'%{query.upper()}%',
+                'limit': limit
+            })
             
-            for idx in keyword_matches:
+            for row in fuzzy_results:
                 if len(results) >= limit:
                     break
-                
-                row = self.parts_df.iloc[idx]
-                score = self._calculate_match_score(query, str(row['internal_part_number']), str(row['description']))
-                
-                if score > 0.3:  # Minimum threshold
+                results.append({
+                    'internal_part_number': row[0],
+                    'description': row[1],
+                    'match_type': 'fuzzy',
+                    'score': float(row[2])
+                })
+        
+        return results
+    
+    def _search_parts_rest_api(self, query: str, limit: int) -> List[Dict]:
+        """Search parts using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Try exact match first
+        exact_url = f"{self.supabase_url}/rest/v1/parts"
+        exact_params = {
+            'select': 'internal_part_number,description',
+            'internal_part_number': f'eq.{query.upper()}',
+            'limit': '1'
+        }
+        
+        exact_response = requests.get(exact_url, headers=headers, params=exact_params, timeout=30)
+        results = []
+        
+        if exact_response.status_code == 200:
+            exact_data = exact_response.json()
+            if exact_data:
+                results.append({
+                    'internal_part_number': exact_data[0]['internal_part_number'],
+                    'description': exact_data[0]['description'],
+                    'match_type': 'exact',
+                    'score': 1.0
+                })
+        
+        # If we need more results, do fuzzy search
+        if len(results) < limit:
+            fuzzy_url = f"{self.supabase_url}/rest/v1/parts"
+            fuzzy_params = {
+                'select': 'internal_part_number,description',
+                'or': f'internal_part_number.ilike.%{query}%,description.ilike.%{query}%',
+                'limit': str(limit)
+            }
+            
+            fuzzy_response = requests.get(fuzzy_url, headers=headers, params=fuzzy_params, timeout=30)
+            
+            if fuzzy_response.status_code == 200:
+                fuzzy_data = fuzzy_response.json()
+                for item in fuzzy_data:
+                    if len(results) >= limit:
+                        break
                     results.append({
-                        'internal_part_number': row['internal_part_number'],
-                        'description': row['description'],
+                        'internal_part_number': item['internal_part_number'],
+                        'description': item['description'],
                         'match_type': 'fuzzy',
-                        'score': score
+                        'score': 0.5  # Default score for REST API
                     })
         
-        # Sort by score and return
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return results[:limit]
+        return results
     
     def _calculate_match_score(self, query: str, part_number: str, description: str) -> float:
         """Calculate match score for fuzzy search."""
@@ -427,79 +513,234 @@ class ComprehensiveHybridDatabaseManager:
         return min(score, 1.0)
     
     def search_customers(self, query: str, limit: int = 10) -> List[Dict]:
-        """Search for customers using fuzzy matching."""
-        if not query or self.customers_df is None or self.customers_df.empty:
+        """Search for customers using direct database queries."""
+        if not query:
             return []
         
-        query = query.strip().upper()
-        results = []
+        query = query.strip()
         
-        for idx, row in self.customers_df.iterrows():
-            company_name = str(row['company_name']).upper()
-            address = str(row['address']).upper()
-            
-            score = 0.0
-            
-            # Company name matching
-            if query in company_name:
-                score += 0.8
-            elif any(word in company_name for word in query.split()):
-                score += 0.6
-            
-            # Address matching
-            if query in address:
-                score += 0.3
-            elif any(word in address for word in query.split()):
-                score += 0.2
-            
-            if score > 0.3:  # Minimum threshold
-                results.append({
-                    'account_number': row['account_number'],
-                    'company_name': row['company_name'],
-                    'address': row['address'],
-                    'state': row['state'],
-                    'score': score
-                })
+        try:
+            if self.use_postgres:
+                return self._search_customers_postgres(query, limit)
+            elif self.use_rest_api:
+                return self._search_customers_rest_api(query, limit)
+            else:
+                print("❌ No database connection available for customer search")
+                return []
+        except Exception as e:
+            print(f"❌ Error searching customers: {e}")
+            return []
+    
+    def _search_customers_postgres(self, query: str, limit: int) -> List[Dict]:
+        """Search customers using PostgreSQL with optimized queries."""
+        from database_config import db_config
         
-        # Sort by score and return
-        results.sort(key=lambda x: x['score'], reverse=True)
-        return results[:limit]
+        sql = """
+            SELECT account_number, company_name, address, city, state_prov, postal_code, country,
+                   CASE 
+                       WHEN UPPER(company_name) LIKE :query_start THEN 0.9
+                       WHEN UPPER(company_name) LIKE :query_contains THEN 0.7
+                       WHEN UPPER(address) LIKE :query_start THEN 0.6
+                       WHEN UPPER(address) LIKE :query_contains THEN 0.4
+                       WHEN UPPER(city) LIKE :query_start THEN 0.5
+                       WHEN UPPER(city) LIKE :query_contains THEN 0.3
+                       ELSE 0.2
+                   END as score
+            FROM customers 
+            WHERE UPPER(company_name) LIKE :query_contains 
+               OR UPPER(address) LIKE :query_contains
+               OR UPPER(city) LIKE :query_contains
+            ORDER BY score DESC, company_name
+            LIMIT :limit
+        """
+        
+        results = db_config.execute_raw_sql(sql, {
+            'query_start': f'{query.upper()}%',
+            'query_contains': f'%{query.upper()}%',
+            'limit': limit
+        })
+        
+        return [{
+            'account_number': row[0],
+            'company_name': row[1],
+            'address': row[2],
+            'city': row[3],
+            'state': row[4],
+            'postal_code': row[5],
+            'country': row[6],
+            'score': float(row[7])
+        } for row in results]
+    
+    def _search_customers_rest_api(self, query: str, limit: int) -> List[Dict]:
+        """Search customers using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f"{self.supabase_url}/rest/v1/customers"
+        params = {
+            'select': 'account_number,company_name,address,city,state_prov,postal_code,country',
+            'or': f'company_name.ilike.%{query}%,address.ilike.%{query}%,city.ilike.%{query}%',
+            'limit': str(limit)
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return [{
+                'account_number': item['account_number'],
+                'company_name': item['company_name'],
+                'address': item['address'],
+                'city': item['city'],
+                'state': item['state_prov'],
+                'postal_code': item['postal_code'],
+                'country': item['country'],
+                'score': 0.5  # Default score for REST API
+            } for item in data]
+        
+        return []
     
     def get_part_by_number(self, part_number: str) -> Optional[Dict]:
-        """Get a specific part by its number."""
-        if not part_number or self.parts_df is None or self.parts_df.empty:
+        """Get a specific part by its number using direct database query."""
+        if not part_number:
             return None
         
-        part_number = part_number.strip().upper()
+        part_number = part_number.strip()
         
-        if part_number in self.parts_by_exact_match:
-            idx = self.parts_by_exact_match[part_number]
-            row = self.parts_df.iloc[idx]
+        try:
+            if self.use_postgres:
+                return self._get_part_by_number_postgres(part_number)
+            elif self.use_rest_api:
+                return self._get_part_by_number_rest_api(part_number)
+            else:
+                print("❌ No database connection available")
+                return None
+        except Exception as e:
+            print(f"❌ Error getting part by number: {e}")
+            return None
+    
+    def _get_part_by_number_postgres(self, part_number: str) -> Optional[Dict]:
+        """Get part by number using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = """
+            SELECT internal_part_number, description 
+            FROM parts 
+            WHERE UPPER(internal_part_number) = :part_number
+            LIMIT 1
+        """
+        
+        result = db_config.execute_raw_sql_single(sql, {'part_number': part_number.upper()})
+        
+        if result:
             return {
-                'internal_part_number': row['internal_part_number'],
-                'description': row['description']
+                'internal_part_number': result[0],
+                'description': result[1]
             }
+        return None
+    
+    def _get_part_by_number_rest_api(self, part_number: str) -> Optional[Dict]:
+        """Get part by number using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
         
+        url = f"{self.supabase_url}/rest/v1/parts"
+        params = {
+            'select': 'internal_part_number,description',
+            'internal_part_number': f'eq.{part_number.upper()}',
+            'limit': '1'
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                return {
+                    'internal_part_number': data[0]['internal_part_number'],
+                    'description': data[0]['description']
+                }
         return None
     
     def get_customer_by_account(self, account_number: str) -> Optional[Dict]:
-        """Get a specific customer by account number."""
-        if not account_number or self.customers_df is None or self.customers_df.empty:
+        """Get a specific customer by account number using direct database query."""
+        if not account_number:
             return None
         
         account_number = str(account_number).strip()
         
-        # Search for exact match
-        matches = self.customers_df[self.customers_df['account_number'] == account_number]
-        if not matches.empty:
-            row = matches.iloc[0]
-            return {
-                'account_number': row['account_number'],
-                'company_name': row['company_name'],
-                'address': row['address'],
-                'state': row['state']
-            }
+        try:
+            if self.use_postgres:
+                return self._get_customer_by_account_postgres(account_number)
+            elif self.use_rest_api:
+                return self._get_customer_by_account_rest_api(account_number)
+            else:
+                print("❌ No database connection available")
+                return None
+        except Exception as e:
+            print(f"❌ Error getting customer by account: {e}")
+            return None
+    
+    def _get_customer_by_account_postgres(self, account_number: str) -> Optional[Dict]:
+        """Get customer by account number using PostgreSQL."""
+        from database_config import db_config
         
+        sql = """
+            SELECT account_number, company_name, address, city, state_prov, postal_code, country
+            FROM customers 
+            WHERE account_number = :account_number
+            LIMIT 1
+        """
+        
+        result = db_config.execute_raw_sql_single(sql, {'account_number': account_number})
+        
+        if result:
+            return {
+                'account_number': result[0],
+                'company_name': result[1],
+                'address': result[2],
+                'city': result[3],
+                'state': result[4],
+                'postal_code': result[5],
+                'country': result[6]
+            }
+        return None
+    
+    def _get_customer_by_account_rest_api(self, account_number: str) -> Optional[Dict]:
+        """Get customer by account number using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f"{self.supabase_url}/rest/v1/customers"
+        params = {
+            'select': 'account_number,company_name,address,city,state_prov,postal_code,country',
+            'account_number': f'eq.{account_number}',
+            'limit': '1'
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                return {
+                    'account_number': data[0]['account_number'],
+                    'company_name': data[0]['company_name'],
+                    'address': data[0]['address'],
+                    'city': data[0]['city'],
+                    'state': data[0]['state_prov'],
+                    'postal_code': data[0]['postal_code'],
+                    'country': data[0]['country']
+                }
         return None
     
     # Processing results methods (same as HybridDatabaseManager)
@@ -1557,11 +1798,163 @@ class ComprehensiveHybridDatabaseManager:
                 )
         return None
     
+    # Lazy loading methods
+    def _load_parts_database(self):
+        """Load parts database on demand."""
+        if self._parts_loaded:
+            return
+        
+        print("📥 Loading parts database on demand...")
+        try:
+            if self.use_postgres:
+                self._load_parts_postgres()
+            elif self.use_rest_api:
+                self._load_parts_rest_api()
+            else:
+                print("❌ No database connection available for parts loading")
+                return
+            
+            self._parts_loaded = True
+            print(f"✅ Loaded {len(self.parts_df)} parts from {self.connection_method}")
+        except Exception as e:
+            print(f"❌ Error loading parts database: {e}")
+    
+    def _load_customers_database(self):
+        """Load customers database on demand."""
+        if self._customers_loaded:
+            return
+        
+        print("📥 Loading customers database on demand...")
+        try:
+            if self.use_postgres:
+                self._load_customers_postgres()
+            elif self.use_rest_api:
+                self._load_customers_rest_api()
+            else:
+                print("❌ No database connection available for customers loading")
+                return
+            
+            self._customers_loaded = True
+            print(f"✅ Loaded {len(self.customers_df)} customers from {self.connection_method}")
+        except Exception as e:
+            print(f"❌ Error loading customers database: {e}")
+    
+    def _load_parts_postgres(self):
+        """Load parts from PostgreSQL."""
+        from database_config import db_config
+        
+        sql = "SELECT internal_part_number, description FROM parts ORDER BY internal_part_number"
+        rows = db_config.execute_raw_sql(sql)
+        
+        data = []
+        for row in rows:
+            data.append({
+                'internal_part_number': row[0],
+                'description': row[1]
+            })
+        
+        self.parts_df = pd.DataFrame(data)
+        self._build_search_indexes()
+    
+    def _load_parts_rest_api(self):
+        """Load parts from REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f"{self.supabase_url}/rest/v1/parts"
+        params = {
+            'select': 'internal_part_number,description',
+            'order': 'internal_part_number'
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.parts_df = pd.DataFrame(data)
+            self._build_search_indexes()
+        else:
+            print(f"❌ Failed to load parts from REST API: {response.status_code}")
+            self.parts_df = pd.DataFrame()
+    
+    def _load_customers_postgres(self):
+        """Load customers from PostgreSQL."""
+        from database_config import db_config
+        
+        sql = "SELECT account_number, company_name, address, city, state_prov, postal_code, country FROM customers ORDER BY company_name"
+        rows = db_config.execute_raw_sql(sql)
+        
+        data = []
+        for row in rows:
+            data.append({
+                'account_number': row[0],
+                'company_name': row[1],
+                'address': row[2],
+                'city': row[3],
+                'state': row[4],
+                'postal_code': row[5],
+                'country': row[6]
+            })
+        
+        self.customers_df = pd.DataFrame(data)
+    
+    def _load_customers_rest_api(self):
+        """Load customers from REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        url = f"{self.supabase_url}/rest/v1/customers"
+        params = {
+            'select': 'account_number,company_name,address,city,state_prov,postal_code,country',
+            'order': 'company_name'
+        }
+        
+        response = requests.get(url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            self.customers_df = pd.DataFrame(data)
+        else:
+            print(f"❌ Failed to load customers from REST API: {response.status_code}")
+            self.customers_df = pd.DataFrame()
+    
+    def _build_search_indexes(self):
+        """Build search indexes for parts."""
+        if self.parts_df is None or self.parts_df.empty:
+            return
+        
+        # Build exact match index
+        self.parts_by_exact_match = {}
+        for idx, row in self.parts_df.iterrows():
+            part_number = str(row['internal_part_number']).upper()
+            self.parts_by_exact_match[part_number] = idx
+        
+        # Build keyword index
+        self.parts_by_keywords = defaultdict(list)
+        for idx, row in self.parts_df.iterrows():
+            part_number = str(row['internal_part_number']).upper()
+            description = str(row['description']).upper()
+            
+            # Extract words from part number and description
+            words = self._extract_words(part_number + " " + description)
+            for word in words:
+                self.parts_by_keywords[word].append(idx)
+    
     # Compatibility methods for existing code
     def get_parts_dataframe(self) -> pd.DataFrame:
-        """Get the parts DataFrame."""
+        """Get the parts DataFrame (lazy loading)."""
+        if not self._parts_loaded:
+            self._load_parts_database()
         return self.parts_df if self.parts_df is not None else pd.DataFrame()
     
     def get_customers_dataframe(self) -> pd.DataFrame:
-        """Get the customers DataFrame."""
+        """Get the customers DataFrame (lazy loading)."""
+        if not self._customers_loaded:
+            self._load_customers_database()
         return self.customers_df if self.customers_df is not None else pd.DataFrame()
