@@ -42,6 +42,7 @@ class ComprehensiveHybridDatabaseManager:
         """Initialize the comprehensive hybrid database manager."""
         self.use_postgres = True
         self.use_rest_api = False
+        self.connection_method = "PostgreSQL Pooler"  # Track current connection method
         self.supabase_url = None
         self.api_key = None
         
@@ -107,11 +108,13 @@ class ComprehensiveHybridDatabaseManager:
             if result:
                 self.use_postgres = True
                 self.use_rest_api = False
+                self.connection_method = "PostgreSQL Pooler"
                 print("✅ Using PostgreSQL Transaction Pooler (primary)")
                 return
                 
         except Exception as e:
             print(f"⚠️ PostgreSQL connection failed: {e}")
+            self.connection_method = "REST API"
         
         # Fallback to REST API
         try:
@@ -130,6 +133,7 @@ class ComprehensiveHybridDatabaseManager:
             if response.status_code in [200, 404]:  # 404 is expected for root endpoint
                 self.use_postgres = False
                 self.use_rest_api = True
+                self.connection_method = "REST API"
                 print("✅ Using Supabase REST API (fallback)")
                 return
                 
@@ -891,6 +895,665 @@ class ComprehensiveHybridDatabaseManager:
             'parts_loaded': len(self.parts_df) if self.parts_df is not None else 0,
             'customers_loaded': len(self.customers_df) if self.customers_df is not None else 0
         }
+    
+    # Additional methods from MetricsDatabase for full compatibility
+    def create_processing_result(self, filename: str, original_filename: str, file_size: int, 
+                                processing_status: ProcessingStatus, validation_status: ValidationStatus,
+                                processing_start_time: datetime, processed_file_path: str, 
+                                raw_json_data: str, notes: str = "") -> int:
+        """Create a new processing result."""
+        print(f"🔍 Creating processing result - using {self.connection_method}")
+        try:
+            if self.use_postgres:
+                return self._create_processing_result_postgres(filename, original_filename, file_size, 
+                                                             processing_status, validation_status, 
+                                                             processing_start_time, processed_file_path, 
+                                                             raw_json_data, notes)
+            elif self.use_rest_api:
+                return self._create_processing_result_rest_api(filename, original_filename, file_size, 
+                                                              processing_status, validation_status, 
+                                                              processing_start_time, processed_file_path, 
+                                                              raw_json_data, notes)
+            else:
+                print("❌ No database connection available")
+                return 0
+        except Exception as e:
+            print(f"❌ Error creating processing result: {e}")
+            import traceback
+            traceback.print_exc()
+            return 0
+    
+    def _create_processing_result_postgres(self, filename: str, original_filename: str, file_size: int, 
+                                          processing_status: ProcessingStatus, validation_status: ValidationStatus,
+                                          processing_start_time: datetime, processed_file_path: str, 
+                                          raw_json_data: str, notes: str = "") -> int:
+        """Create processing result using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = '''
+            INSERT INTO processing_results (
+                filename, original_filename, file_size, processing_status, validation_status,
+                processing_start_time, processed_file_path, raw_json_data, notes, created_at, updated_at
+            ) VALUES (:filename, :original_filename, :file_size, :processing_status, :validation_status,
+                     :processing_start_time, :processed_file_path, :raw_json_data, :notes, :created_at, :updated_at)
+            RETURNING id
+        '''
+        
+        now = datetime.utcnow()
+        params = {
+            'filename': filename,
+            'original_filename': original_filename,
+            'file_size': file_size,
+            'processing_status': processing_status.value,
+            'validation_status': validation_status.value,
+            'processing_start_time': processing_start_time,
+            'processed_file_path': processed_file_path,
+            'raw_json_data': raw_json_data,
+            'notes': notes,
+            'created_at': now,
+            'updated_at': now
+        }
+        result = db_config.execute_raw_sql_single(sql, params)
+        
+        return result[0] if result else 0
+    
+    def _create_processing_result_rest_api(self, filename: str, original_filename: str, file_size: int, 
+                                          processing_status: ProcessingStatus, validation_status: ValidationStatus,
+                                          processing_start_time: datetime, processed_file_path: str, 
+                                          raw_json_data: str, notes: str = "") -> int:
+        """Create processing result using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'filename': filename,
+            'original_filename': original_filename,
+            'file_size': file_size,
+            'processing_status': processing_status.value,
+            'validation_status': validation_status.value,
+            'processing_start_time': processing_start_time.isoformat(),
+            'processed_file_path': processed_file_path,
+            'raw_json_data': raw_json_data,
+            'notes': notes,
+            'created_at': datetime.utcnow().isoformat(),
+            'updated_at': datetime.utcnow().isoformat()
+        }
+        
+        insert_url = f"{self.supabase_url}/rest/v1/processing_results"
+        response = requests.post(insert_url, headers=headers, json=data, timeout=30)
+        
+        
+        if response.status_code == 201:
+            # Supabase REST API returns empty response on successful insert
+            # We need to query the inserted record to get the ID
+            try:
+                # Query the most recent record with this filename to get the ID
+                query_url = f"{self.supabase_url}/rest/v1/processing_results"
+                params = {
+                    'select': 'id',
+                    'filename': f'eq.{filename}',
+                    'order': 'created_at.desc',
+                    'limit': '1'
+                }
+                
+                query_response = requests.get(query_url, headers=headers, params=params, timeout=30)
+                if query_response.status_code == 200:
+                    query_data = query_response.json()
+                    if query_data:
+                        return query_data[0]['id']
+                
+                # Fallback: return a dummy ID if we can't get the real one
+                return 999999
+            except Exception as e:
+                print(f"❌ Failed to get inserted record ID: {e}")
+                return 999999
+        else:
+            print(f"❌ REST API create failed with status: {response.status_code}")
+            return 0
+    
+    def update_processing_result(self, result_id: int, **kwargs) -> bool:
+        """Update a processing result."""
+        try:
+            if not kwargs:
+                return True
+            
+            if self.use_postgres:
+                return self._update_processing_result_postgres(result_id, **kwargs)
+            elif self.use_rest_api:
+                return self._update_processing_result_rest_api(result_id, **kwargs)
+            else:
+                print("❌ No database connection available")
+                return False
+        except Exception as e:
+            print(f"❌ Error updating processing result: {e}")
+            return False
+    
+    def _update_processing_result_postgres(self, result_id: int, **kwargs) -> bool:
+        """Update processing result using PostgreSQL."""
+        from database_config import db_config
+        
+        set_clauses = []
+        values = []
+        
+        for key, value in kwargs.items():
+            if key == 'error_types' and isinstance(value, list):
+                value = json.dumps([e.value if hasattr(e, 'value') else e for e in value])
+            elif hasattr(value, 'value'):  # Enum
+                value = value.value
+            elif isinstance(value, datetime):
+                value = value.isoformat()
+                
+            set_clauses.append(f"{key} = %s")
+            values.append(value)
+        
+        if not set_clauses:
+            return True
+            
+        set_clauses.append("updated_at = %s")
+        values.append(datetime.utcnow())
+        values.append(result_id)
+        
+        # Convert to named parameters
+        set_clauses_named = []
+        for i, clause in enumerate(set_clauses):
+            param_name = f"param_{i}"
+            set_clauses_named.append(f"{clause.split(' = ')[0]} = :{param_name}")
+        
+        sql = f'''
+            UPDATE processing_results 
+            SET {', '.join(set_clauses_named)}
+            WHERE id = :result_id
+        '''
+        
+        # Create named parameters dict
+        params = {}
+        for i, value in enumerate(values[:-1]):  # Exclude the last value (result_id)
+            params[f"param_{i}"] = value
+        params['result_id'] = values[-1]
+        
+        db_config.execute_raw_sql(sql, params)
+        return True
+    
+    def _update_processing_result_rest_api(self, result_id: int, **kwargs) -> bool:
+        """Update processing result using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        # Prepare data for REST API
+        data = {}
+        for key, value in kwargs.items():
+            if key == 'error_types' and isinstance(value, list):
+                data[key] = json.dumps([e.value if hasattr(e, 'value') else e for e in value])
+            elif hasattr(value, 'value'):  # Enum
+                data[key] = value.value
+            elif isinstance(value, datetime):
+                data[key] = value.isoformat()
+            else:
+                data[key] = value
+        
+        data['updated_at'] = datetime.utcnow().isoformat()
+        
+        update_url = f"{self.supabase_url}/rest/v1/processing_results"
+        params = {'id': f'eq.{result_id}'}
+        response = requests.patch(update_url, headers=headers, json=data, params=params, timeout=30)
+        
+        
+        return response.status_code in [200, 204]  # 204 is No Content, which is success for PATCH
+    
+    def get_processing_result(self, result_id: int) -> Optional[ProcessingResult]:
+        """Get a processing result by ID."""
+        try:
+            if self.use_postgres:
+                return self._get_processing_result_postgres(result_id)
+            elif self.use_rest_api:
+                return self._get_processing_result_rest_api(result_id)
+            else:
+                print("❌ No database connection available")
+                return None
+        except Exception as e:
+            print(f"❌ Error getting processing result: {e}")
+            return None
+    
+    def _get_processing_result_postgres(self, result_id: int) -> Optional[ProcessingResult]:
+        """Get processing result by ID using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = """
+            SELECT id, filename, original_filename, file_size, processing_status, 
+                   validation_status, processing_start_time, processing_end_time, 
+                   processing_duration, total_parts, parts_mapped, parts_not_found, 
+                   parts_manual_review, mapping_success_rate, customer_matched, 
+                   customer_match_confidence, error_details, error_types, 
+                   manual_corrections_made, epicor_ready, epicor_ready_with_one_click, 
+                   missing_info_count, processed_file_path, epicor_json_path, 
+                   raw_json_data, notes, created_at, updated_at
+            FROM processing_results WHERE id = :result_id
+        """
+        row = db_config.execute_raw_sql_single(sql, {'result_id': result_id})
+        
+        if row:
+            # Parse error_types JSON safely
+            try:
+                error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+            except (json.JSONDecodeError, ValueError):
+                error_types = []
+            
+            return ProcessingResult(
+                id=row[0],
+                filename=row[1],
+                original_filename=row[2],
+                file_size=row[3],
+                processing_status=ProcessingStatus(row[4]),
+                validation_status=ValidationStatus(row[5]),
+                processing_start_time=row[6],
+                processing_end_time=row[7],
+                processing_duration=row[8],
+                total_parts=row[9] or 0,
+                parts_mapped=row[10] or 0,
+                parts_not_found=row[11] or 0,
+                parts_manual_review=row[12] or 0,
+                mapping_success_rate=row[13] or 0.0,
+                customer_matched=row[14] or False,
+                customer_match_confidence=row[15] or 0.0,
+                error_types=error_types,
+                error_details=row[16] or '',
+                manual_corrections_made=row[18] or 0,
+                epicor_ready=row[19] or False,
+                epicor_ready_with_one_click=row[20] or False,
+                missing_info_count=row[21] or 0,
+                processed_file_path=row[22] or '',
+                epicor_json_path=row[23],
+                raw_json_data=row[24] or '',
+                notes=row[25] or '',
+                created_at=row[26],
+                updated_at=row[27]
+            )
+        return None
+    
+    def _get_processing_result_rest_api(self, result_id: int) -> Optional[ProcessingResult]:
+        """Get processing result by ID using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        query_url = f"{self.supabase_url}/rest/v1/processing_results"
+        params = {
+            'select': '*',
+            'id': f'eq.{result_id}'
+        }
+        
+        response = requests.get(query_url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                record = data[0]
+                # Convert REST API record to ProcessingResult object
+                error_types = [ErrorType(e) for e in json.loads(record.get('error_types', '[]'))]
+                
+                return ProcessingResult(
+                    id=record.get('id'),
+                    filename=record.get('filename', ''),
+                    original_filename=record.get('original_filename', ''),
+                    file_size=record.get('file_size', 0),
+                    processing_status=ProcessingStatus(record.get('processing_status', 'pending')),
+                    validation_status=ValidationStatus(record.get('validation_status', 'pending_review')),
+                    processing_start_time=datetime.fromisoformat(record.get('processing_start_time', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('processing_start_time') else None,
+                    processing_end_time=datetime.fromisoformat(record.get('processing_end_time', '').replace('Z', '+00:00')) if record.get('processing_end_time') else None,
+                    processing_duration=record.get('processing_duration'),
+                    total_parts=record.get('total_parts', 0),
+                    parts_mapped=record.get('parts_mapped', 0),
+                    parts_not_found=record.get('parts_not_found', 0),
+                    parts_manual_review=record.get('parts_manual_review', 0),
+                    mapping_success_rate=record.get('mapping_success_rate', 0.0),
+                    customer_matched=record.get('customer_matched', False),
+                    customer_match_confidence=record.get('customer_match_confidence', 0.0),
+                    error_types=error_types,
+                    error_details=record.get('error_details', ''),
+                    manual_corrections_made=record.get('manual_corrections_made', 0),
+                    epicor_ready=record.get('epicor_ready', False),
+                    epicor_ready_with_one_click=record.get('epicor_ready_with_one_click', False),
+                    missing_info_count=record.get('missing_info_count', 0),
+                    processed_file_path=record.get('processed_file_path', ''),
+                    epicor_json_path=record.get('epicor_json_path'),
+                    raw_json_data=record.get('raw_json_data', ''),
+                    notes=record.get('notes', ''),
+                    created_at=datetime.fromisoformat(record.get('created_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('created_at') else None,
+                    updated_at=datetime.fromisoformat(record.get('updated_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('updated_at') else None
+                )
+        return None
+    
+    def delete_processing_result(self, result_id: int) -> bool:
+        """Delete a processing result."""
+        try:
+            if self.use_postgres:
+                return self._delete_processing_result_postgres(result_id)
+            elif self.use_rest_api:
+                return self._delete_processing_result_rest_api(result_id)
+            else:
+                print("❌ No database connection available")
+                return False
+        except Exception as e:
+            print(f"❌ Error deleting processing result: {e}")
+            return False
+    
+    def _delete_processing_result_postgres(self, result_id: int) -> bool:
+        """Delete processing result using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = "DELETE FROM processing_results WHERE id = :result_id"
+        db_config.execute_raw_sql(sql, {'result_id': result_id})
+        return True
+    
+    def _delete_processing_result_rest_api(self, result_id: int) -> bool:
+        """Delete processing result using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        delete_url = f"{self.supabase_url}/rest/v1/processing_results"
+        params = {'id': f'eq.{result_id}'}
+        response = requests.delete(delete_url, headers=headers, params=params, timeout=30)
+        
+        return response.status_code in [200, 204]  # 204 is No Content, which is success for DELETE
+    
+    def mark_as_correct(self, result_id: int) -> bool:
+        """Mark a processing result as correct."""
+        return self.update_processing_result(result_id, validation_status=ValidationStatus.CORRECT)
+    
+    def mark_as_contains_error(self, result_id: int, error_types: List[ErrorType], error_details: str = "") -> bool:
+        """Mark a processing result as containing errors."""
+        return self.update_processing_result(
+            result_id, 
+            validation_status=ValidationStatus.CONTAINS_ERROR,
+            error_types=error_types,
+            error_details=error_details
+        )
+    
+    def update_raw_json_data(self, file_id: int, raw_json_data: str) -> bool:
+        """Update raw JSON data for a file."""
+        return self.update_processing_result(file_id, raw_json_data=raw_json_data)
+    
+    def update_validation_status(self, file_id: int, validation_status: str) -> bool:
+        """Update validation status for a file."""
+        return self.update_processing_result(file_id, validation_status=validation_status)
+    
+    def add_error_type(self, file_id: int, error_type: ErrorType) -> bool:
+        """Add an error type to a file."""
+        try:
+            # Get current error types
+            result = self.get_processing_result(file_id)
+            if not result:
+                return False
+                
+            current_errors = result.error_types
+            if error_type not in current_errors:
+                current_errors.append(error_type)
+                
+            return self.update_processing_result(file_id, error_types=current_errors)
+            
+        except Exception as e:
+            print(f"❌ Error adding error type: {e}")
+            return False
+    
+    def get_all_processing_results(self, limit: int = 100, offset: int = 0) -> List[ProcessingResult]:
+        """Get all processing results with pagination."""
+        try:
+            if self.use_postgres:
+                return self._get_all_processing_results_postgres(limit, offset)
+            elif self.use_rest_api:
+                return self._get_all_processing_results_rest_api(limit, offset)
+            else:
+                print("❌ No database connection available")
+                return []
+        except Exception as e:
+            print(f"❌ Error getting all processing results: {e}")
+            return []
+    
+    def _get_all_processing_results_postgres(self, limit: int, offset: int) -> List[ProcessingResult]:
+        """Get all processing results using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = '''
+            SELECT * FROM processing_results 
+            ORDER BY created_at DESC 
+            LIMIT :limit OFFSET :offset
+        '''
+        
+        rows = db_config.execute_raw_sql(sql, {'limit': limit, 'offset': offset})
+        
+        results = []
+        for row in rows:
+            # Convert row to ProcessingResult object
+            error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+            
+            result = ProcessingResult(
+                id=row[0],
+                filename=row[1],
+                original_filename=row[2],
+                file_size=row[3],
+                processing_status=ProcessingStatus(row[4]),
+                validation_status=ValidationStatus(row[5]),
+                processing_start_time=row[6],
+                processing_end_time=row[7],
+                processing_duration=row[8],
+                total_parts=row[9] or 0,
+                parts_mapped=row[10] or 0,
+                parts_not_found=row[11] or 0,
+                parts_manual_review=row[12] or 0,
+                mapping_success_rate=row[13] or 0.0,
+                customer_matched=row[14] or False,
+                customer_match_confidence=row[15] or 0.0,
+                error_types=error_types,
+                error_details=row[16] or '',
+                manual_corrections_made=row[18] or 0,
+                epicor_ready=row[19] or False,
+                epicor_ready_with_one_click=row[20] or False,
+                missing_info_count=row[21] or 0,
+                processed_file_path=row[22] or '',
+                epicor_json_path=row[23],
+                raw_json_data=row[24] or '',
+                notes=row[25] or '',
+                created_at=row[26],
+                updated_at=row[27]
+            )
+            results.append(result)
+        
+        return results
+    
+    def _get_all_processing_results_rest_api(self, limit: int, offset: int) -> List[ProcessingResult]:
+        """Get all processing results using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        query_url = f"{self.supabase_url}/rest/v1/processing_results"
+        params = {
+            'select': '*',
+            'limit': str(limit),
+            'offset': str(offset),
+            'order': 'created_at.desc'
+        }
+        
+        response = requests.get(query_url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            results = []
+            for record in data:
+                # Convert REST API record to ProcessingResult object
+                error_types = [ErrorType(e) for e in json.loads(record.get('error_types', '[]'))]
+                
+                result = ProcessingResult(
+                    id=record.get('id'),
+                    filename=record.get('filename', ''),
+                    original_filename=record.get('original_filename', ''),
+                    file_size=record.get('file_size', 0),
+                    processing_status=ProcessingStatus(record.get('processing_status', 'pending')),
+                    validation_status=ValidationStatus(record.get('validation_status', 'pending_review')),
+                    processing_start_time=datetime.fromisoformat(record.get('processing_start_time', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('processing_start_time') else None,
+                    processing_end_time=datetime.fromisoformat(record.get('processing_end_time', '').replace('Z', '+00:00')) if record.get('processing_end_time') else None,
+                    processing_duration=record.get('processing_duration'),
+                    total_parts=record.get('total_parts', 0),
+                    parts_mapped=record.get('parts_mapped', 0),
+                    parts_not_found=record.get('parts_not_found', 0),
+                    parts_manual_review=record.get('parts_manual_review', 0),
+                    mapping_success_rate=record.get('mapping_success_rate', 0.0),
+                    customer_matched=record.get('customer_matched', False),
+                    customer_match_confidence=record.get('customer_match_confidence', 0.0),
+                    error_types=error_types,
+                    error_details=record.get('error_details', ''),
+                    manual_corrections_made=record.get('manual_corrections_made', 0),
+                    epicor_ready=record.get('epicor_ready', False),
+                    epicor_ready_with_one_click=record.get('epicor_ready_with_one_click', False),
+                    missing_info_count=record.get('missing_info_count', 0),
+                    processed_file_path=record.get('processed_file_path', ''),
+                    epicor_json_path=record.get('epicor_json_path'),
+                    raw_json_data=record.get('raw_json_data', ''),
+                    notes=record.get('notes', ''),
+                    created_at=datetime.fromisoformat(record.get('created_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('created_at') else None,
+                    updated_at=datetime.fromisoformat(record.get('updated_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('updated_at') else None
+                )
+                results.append(result)
+            
+            return results
+        else:
+            print(f"❌ REST API query failed with status: {response.status_code}")
+            return []
+    
+    def get_processing_result_by_filename(self, filename: str) -> Optional[ProcessingResult]:
+        """Get a processing result by filename."""
+        try:
+            if self.use_postgres:
+                return self._get_processing_result_by_filename_postgres(filename)
+            elif self.use_rest_api:
+                return self._get_processing_result_by_filename_rest_api(filename)
+            else:
+                print("❌ No database connection available")
+                return None
+        except Exception as e:
+            print(f"❌ Error getting processing result by filename: {e}")
+            return None
+    
+    def _get_processing_result_by_filename_postgres(self, filename: str) -> Optional[ProcessingResult]:
+        """Get processing result by filename using PostgreSQL."""
+        from database_config import db_config
+        
+        sql = '''
+            SELECT * FROM processing_results 
+            WHERE filename = :filename 
+            ORDER BY created_at DESC 
+            LIMIT 1
+        '''
+        
+        row = db_config.execute_raw_sql_single(sql, {'filename': filename})
+        
+        if row:
+            # Convert row to ProcessingResult object
+            error_types = [ErrorType(e) for e in json.loads(row[17] or '[]')]
+            
+            return ProcessingResult(
+                id=row[0],
+                filename=row[1],
+                original_filename=row[2],
+                file_size=row[3],
+                processing_status=ProcessingStatus(row[4]),
+                validation_status=ValidationStatus(row[5]),
+                processing_start_time=row[6],
+                processing_end_time=row[7],
+                processing_duration=row[8],
+                total_parts=row[9] or 0,
+                parts_mapped=row[10] or 0,
+                parts_not_found=row[11] or 0,
+                parts_manual_review=row[12] or 0,
+                mapping_success_rate=row[13] or 0.0,
+                customer_matched=row[14] or False,
+                customer_match_confidence=row[15] or 0.0,
+                error_types=error_types,
+                error_details=row[16] or '',
+                manual_corrections_made=row[18] or 0,
+                epicor_ready=row[19] or False,
+                epicor_ready_with_one_click=row[20] or False,
+                missing_info_count=row[21] or 0,
+                processed_file_path=row[22] or '',
+                epicor_json_path=row[23],
+                raw_json_data=row[24] or '',
+                notes=row[25] or '',
+                created_at=row[26],
+                updated_at=row[27]
+            )
+        
+        return None
+    
+    def _get_processing_result_by_filename_rest_api(self, filename: str) -> Optional[ProcessingResult]:
+        """Get processing result by filename using REST API."""
+        headers = {
+            'apikey': self.api_key,
+            'Authorization': f'Bearer {self.api_key}',
+            'Content-Type': 'application/json'
+        }
+        
+        query_url = f"{self.supabase_url}/rest/v1/processing_results"
+        params = {
+            'select': '*',
+            'filename': f'eq.{filename}',
+            'order': 'created_at.desc',
+            'limit': '1'
+        }
+        
+        response = requests.get(query_url, headers=headers, params=params, timeout=30)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data:
+                record = data[0]
+                # Convert REST API record to ProcessingResult object
+                error_types = [ErrorType(e) for e in json.loads(record.get('error_types', '[]'))]
+                
+                return ProcessingResult(
+                    id=record.get('id'),
+                    filename=record.get('filename', ''),
+                    original_filename=record.get('original_filename', ''),
+                    file_size=record.get('file_size', 0),
+                    processing_status=ProcessingStatus(record.get('processing_status', 'pending')),
+                    validation_status=ValidationStatus(record.get('validation_status', 'pending_review')),
+                    processing_start_time=datetime.fromisoformat(record.get('processing_start_time', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('processing_start_time') else None,
+                    processing_end_time=datetime.fromisoformat(record.get('processing_end_time', '').replace('Z', '+00:00')) if record.get('processing_end_time') else None,
+                    processing_duration=record.get('processing_duration'),
+                    total_parts=record.get('total_parts', 0),
+                    parts_mapped=record.get('parts_mapped', 0),
+                    parts_not_found=record.get('parts_not_found', 0),
+                    parts_manual_review=record.get('parts_manual_review', 0),
+                    mapping_success_rate=record.get('mapping_success_rate', 0.0),
+                    customer_matched=record.get('customer_matched', False),
+                    customer_match_confidence=record.get('customer_match_confidence', 0.0),
+                    error_types=error_types,
+                    error_details=record.get('error_details', ''),
+                    manual_corrections_made=record.get('manual_corrections_made', 0),
+                    epicor_ready=record.get('epicor_ready', False),
+                    epicor_ready_with_one_click=record.get('epicor_ready_with_one_click', False),
+                    missing_info_count=record.get('missing_info_count', 0),
+                    processed_file_path=record.get('processed_file_path', ''),
+                    epicor_json_path=record.get('epicor_json_path'),
+                    raw_json_data=record.get('raw_json_data', ''),
+                    notes=record.get('notes', ''),
+                    created_at=datetime.fromisoformat(record.get('created_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('created_at') else None,
+                    updated_at=datetime.fromisoformat(record.get('updated_at', datetime.now().isoformat()).replace('Z', '+00:00')) if record.get('updated_at') else None
+                )
+        return None
     
     # Compatibility methods for existing code
     def get_parts_dataframe(self) -> pd.DataFrame:

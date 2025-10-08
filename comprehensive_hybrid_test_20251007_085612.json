@@ -1,0 +1,22 @@
+{
+  "test_timestamp": "2025-10-07T08:56:12.381239",
+  "connection_status": {
+    "using_postgres": true,
+    "using_rest_api": false,
+    "connection_method": "PostgreSQL Transaction Pooler",
+    "supabase_url": "https://lctdvwthxetczwyslibv.supabase.co",
+    "has_api_key": true,
+    "parts_loaded": 211898,
+    "customers_loaded": 1902
+  },
+  "parts_count": 211898,
+  "customers_count": 1902,
+  "processing_results_count": 0,
+  "dashboard_metrics": {
+    "total_files": 7,
+    "successful_files": 1,
+    "success_rate": 14.29,
+    "avg_processing_time": 45.67
+  },
+  "test_status": "PASSED"
+}

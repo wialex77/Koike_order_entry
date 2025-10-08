@@ -246,10 +246,10 @@ class MetricsDatabase:
             sql = '''
                 SELECT * FROM processing_results 
                 ORDER BY created_at DESC 
-                LIMIT %s OFFSET %s
+                LIMIT :limit OFFSET :offset
             '''
             
-            rows = self.db_config.execute_raw_sql(sql, (limit, offset))
+            rows = self.db_config.execute_raw_sql(sql, {'limit': limit, 'offset': offset})
             
             results = []
             for row in rows:
@@ -299,12 +299,12 @@ class MetricsDatabase:
         try:
             sql = '''
                 SELECT * FROM processing_results 
-                WHERE filename = %s 
+                WHERE filename = :filename 
                 ORDER BY created_at DESC 
                 LIMIT 1
             '''
             
-            row = self.db_config.execute_raw_sql_single(sql, (filename,))
+            row = self.db_config.execute_raw_sql_single(sql, {'filename': filename})
             
             if row:
                 # Convert row to ProcessingResult object
@@ -395,24 +395,26 @@ class MetricsDatabase:
                 INSERT INTO processing_results (
                     filename, original_filename, file_size, processing_status, validation_status,
                     processing_start_time, processed_file_path, raw_json_data, notes, created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ) VALUES (:filename, :original_filename, :file_size, :processing_status, :validation_status,
+                         :processing_start_time, :processed_file_path, :raw_json_data, :notes, :created_at, :updated_at)
                 RETURNING id
             '''
             
             now = datetime.utcnow()
-            result = self.db_config.execute_raw_sql_single(sql, (
-                filename,
-                original_filename,
-                file_size,
-                processing_status.value,
-                validation_status.value,
-                processing_start_time,
-                processed_file_path,
-                raw_json_data,
-                notes,
-                now,
-                now
-            ))
+            params = {
+                'filename': filename,
+                'original_filename': original_filename,
+                'file_size': file_size,
+                'processing_status': processing_status.value,
+                'validation_status': validation_status.value,
+                'processing_start_time': processing_start_time,
+                'processed_file_path': processed_file_path,
+                'raw_json_data': raw_json_data,
+                'notes': notes,
+                'created_at': now,
+                'updated_at': now
+            }
+            result = self.db_config.execute_raw_sql_single(sql, params)
             
             return result[0] if result else 0
             
@@ -429,7 +431,7 @@ class MetricsDatabase:
                 return True
                 
             set_clauses = []
-            values = []
+            params = {}
             
             for key, value in kwargs.items():
                 if key == 'error_types' and isinstance(value, list):
@@ -439,23 +441,24 @@ class MetricsDatabase:
                 elif isinstance(value, datetime):
                     value = value.isoformat()
                     
-                set_clauses.append(f"{key} = %s")
-                values.append(value)
+                param_name = f"param_{key}"
+                set_clauses.append(f"{key} = :{param_name}")
+                params[param_name] = value
             
             if not set_clauses:
                 return True
                 
-            set_clauses.append("updated_at = %s")
-            values.append(datetime.utcnow())
-            values.append(result_id)
+            set_clauses.append("updated_at = :updated_at")
+            params['updated_at'] = datetime.utcnow()
+            params['result_id'] = result_id
             
             sql = f'''
                 UPDATE processing_results 
                 SET {', '.join(set_clauses)}
-                WHERE id = %s
+                WHERE id = :result_id
             '''
             
-            self.db_config.execute_raw_sql(sql, values)
+            self.db_config.execute_raw_sql(sql, params)
             return True
             
         except Exception as e:
@@ -474,9 +477,9 @@ class MetricsDatabase:
                        manual_corrections_made, epicor_ready, epicor_ready_with_one_click, 
                        missing_info_count, processed_file_path, epicor_json_path, 
                        raw_json_data, notes, created_at, updated_at
-                FROM processing_results WHERE id = %s
+                FROM processing_results WHERE id = :result_id
             """
-            row = self.db_config.execute_raw_sql_single(sql, (result_id,))
+            row = self.db_config.execute_raw_sql_single(sql, {'result_id': result_id})
             
             if row:
                 # Parse error_types JSON safely
@@ -526,8 +529,8 @@ class MetricsDatabase:
     def delete_processing_result(self, result_id: int) -> bool:
         """Delete a processing result."""
         try:
-            sql = "DELETE FROM processing_results WHERE id = %s"
-            self.db_config.execute_raw_sql(sql, (result_id,))
+            sql = "DELETE FROM processing_results WHERE id = :result_id"
+            self.db_config.execute_raw_sql(sql, {'result_id': result_id})
             return True
             
         except Exception as e:
