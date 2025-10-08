@@ -65,12 +65,14 @@ class ComprehensiveHybridDatabaseManager:
         self.load_databases()
     
     def _load_environment(self):
-        """Load environment variables from config.env."""
-        env_file = os.path.join(os.path.dirname(__file__), 'config.env')
-        if os.path.exists(env_file):
-            load_dotenv(env_file)
+        """Load environment variables from AWS environment variables."""
+        # In AWS, environment variables are already set, no need to load from file
+        # Locally, we'll comment this out for now since config.env doesn't exist in AWS
+        # env_file = os.path.join(os.path.dirname(__file__), 'config.env')
+        # if os.path.exists(env_file):
+        #     load_dotenv(env_file)
         
-        # Extract Supabase project info
+        # Extract Supabase project info from AWS environment variables
         db_host = os.environ.get('DB_HOST', 'aws-1-us-east-2.pooler.supabase.co')
         if 'pooler.supabase.com' in db_host:
             project_ref = db_host.split('.')[0].replace('aws-1-us-east-2', 'lctdvwthxetczwyslibv')

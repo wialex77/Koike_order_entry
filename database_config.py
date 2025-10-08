@@ -9,6 +9,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from urllib.parse import quote_plus
+from dotenv import load_dotenv
+
+# Load environment variables immediately
+# In AWS, these will be the environment variables set in the AWS console
+# Locally, we'll comment this out for now since config.env doesn't exist in AWS
+# load_dotenv('config.env')  # Commented out for AWS deployment
 
 Base = declarative_base()
 

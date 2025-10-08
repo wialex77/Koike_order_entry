@@ -13,7 +13,8 @@ from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
 
 # Load environment variables from config file
-load_dotenv('config.env')
+# Commented out for AWS deployment - environment variables are set in AWS console
+# load_dotenv('config.env')
 
 # Import our custom modules
 from step1_upload import FileUploadHandler
